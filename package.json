@@ -65,7 +65,7 @@
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "prepack": "pnpm run build",
-    "prepublishOnly": "pnpm run test && pnpm run build"
+    "prepublishOnly": "pnpm run test && pnpm run build:all"
   },
   "dependencies": {
     "@clack/prompts": "^1.0.0"
