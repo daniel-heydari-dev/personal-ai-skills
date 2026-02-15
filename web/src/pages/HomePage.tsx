@@ -54,9 +54,9 @@ function useCountUp(target: number, duration = 1200, delay = 0) {
 }
 
 const pkgManagers = [
-  { id: "pnpm", label: "pnpm", command: "pnpm dlx ai-skills" },
-  { id: "npm", label: "npm", command: "npx ai-skills" },
-  { id: "yarn", label: "yarn", command: "yarn dlx ai-skills" },
+  { id: "pnpm", label: "pnpm", command: "pnpm dlx personal-ai-skills" },
+  { id: "npm", label: "npm", command: "npx personal-ai-skills" },
+  { id: "yarn", label: "yarn", command: "yarn dlx personal-ai-skills" },
 ] as const;
 
 function PackageManagerTabs() {

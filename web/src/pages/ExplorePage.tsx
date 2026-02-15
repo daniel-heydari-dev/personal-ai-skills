@@ -166,8 +166,8 @@ export function ExplorePage() {
       {/* Hero */}
       <section className={styles.hero}>
         <h1 className={styles.heroTitle}>
-          Everything in the{" "}
-          <span className={styles.heroAccent}>AI Skills</span> Catalog
+          Everything in the <span className={styles.heroAccent}>AI Skills</span>{" "}
+          Catalog
         </h1>
         <p className={styles.heroSub}>
           Browse all 45 templates across 5 categories. Each section explains
@@ -279,7 +279,7 @@ export function ExplorePage() {
           bridge files.
         </p>
         <div className={styles.ctaCode}>
-          <code>npx ai-skills</code>
+          <code>npx personal-ai-skills</code>
         </div>
       </section>
     </div>

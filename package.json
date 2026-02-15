@@ -1,6 +1,6 @@
 {
   "name": "personal-ai-skills",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Universal AI skills installer. Install skills, agents, commands, rules, and prompts across 20+ AI assistants (Claude, Cursor, Windsurf, Copilot, Gemini, and more).",
   "license": "MIT",
   "type": "module",
@@ -43,7 +43,7 @@
     "node": ">=18.0.0"
   },
   "bin": {
-    "ai-skills": "dist/cli.js"
+    "personal-ai-skills": "dist/cli.js"
   },
   "files": [
     "dist",

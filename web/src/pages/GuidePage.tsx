@@ -192,7 +192,7 @@ the changes we just made."`,
       "Skills are SKILL.md files with structured rules",
       "AI reads them automatically on every prompt",
       "Include DO/DON'T rules, tables, code examples",
-      "Install via: npx ai-skills → select skills",
+      "Install via: npx personal-ai-skills → select skills",
     ],
     prompt: `# .claude/skills/modern-react/SKILL.md
 ---
@@ -412,8 +412,8 @@ export function GuidePage() {
         <h2 className={styles.sectionTitle}>AI Config Files by Assistant</h2>
         <p className={styles.configSub}>
           Each AI assistant reads a different config file.{" "}
-          <strong>ai-skills</strong> generates all of these automatically — but
-          you can also create them manually.
+          <strong>personal-ai-skills</strong> generates all of these
+          automatically — but you can also create them manually.
         </p>
         <div className={styles.configTable}>
           <div className={styles.configHeader}>
@@ -439,9 +439,9 @@ export function GuidePage() {
           <div>
             <h2 className={styles.deepDiveTitle}>Skills</h2>
             <p className={styles.deepDiveSub}>
-              Extra context that's <strong>dynamically loaded</strong> — teaching
-              your AI best practices for a specific technology so it writes
-              better code than if you just asked.
+              Extra context that's <strong>dynamically loaded</strong> —
+              teaching your AI best practices for a specific technology so it
+              writes better code than if you just asked.
             </p>
           </div>
         </div>
@@ -455,7 +455,9 @@ export function GuidePage() {
             practices to every response.
           </p>
           <div className={styles.skillStructure}>
-            <div className={styles.skillStructureTitle}>Skill folder structure</div>
+            <div className={styles.skillStructureTitle}>
+              Skill folder structure
+            </div>
             <div className={styles.skillTree}>
               <div className={styles.skillTreeItem}>
                 <span className={styles.skillTreeIcon}>📄</span>
@@ -464,15 +466,21 @@ export function GuidePage() {
               </div>
               <div className={styles.skillTreeItem}>
                 <span className={styles.skillTreeIcon}>📁</span>
-                <span className={styles.skillTreeText}>[+ extra .md documents]</span>
+                <span className={styles.skillTreeText}>
+                  [+ extra .md documents]
+                </span>
               </div>
               <div className={styles.skillTreeItem}>
                 <span className={styles.skillTreeIcon}>📁</span>
-                <span className={styles.skillTreeText}>[+ references/ folder]</span>
+                <span className={styles.skillTreeText}>
+                  [+ references/ folder]
+                </span>
               </div>
               <div className={styles.skillTreeItem}>
                 <span className={styles.skillTreeIcon}>📁</span>
-                <span className={styles.skillTreeText}>[+ scripts/ folder]</span>
+                <span className={styles.skillTreeText}>
+                  [+ scripts/ folder]
+                </span>
               </div>
               <div className={styles.skillTreeItem}>
                 <span className={styles.skillTreeIcon}>📁</span>
@@ -488,7 +496,9 @@ export function GuidePage() {
             <code>.claude/skills/modern-react/SKILL.md</code>
           </div>
           <div className={styles.codeBlock}>
-            <span className={styles.codeLabel}>Modern React Skill (excerpt)</span>
+            <span className={styles.codeLabel}>
+              Modern React Skill (excerpt)
+            </span>
             <pre className={styles.codePre}>
               <code>{`---
 name: Modern React
@@ -533,10 +543,42 @@ const filtered = useMemo(
             </pre>
           </div>
           <div className={styles.deepDiveBenefits}>
-            <span className={styles.benefitChip} style={{ background: "rgba(139, 92, 246, 0.12)", color: "#a78bfa" }}>Loaded automatically</span>
-            <span className={styles.benefitChip} style={{ background: "rgba(34, 211, 238, 0.12)", color: "#22d3ee" }}>Real code examples</span>
-            <span className={styles.benefitChip} style={{ background: "rgba(52, 211, 153, 0.12)", color: "#34d399" }}>DO / DON'T rules</span>
-            <span className={styles.benefitChip} style={{ background: "rgba(251, 146, 60, 0.12)", color: "#fb923c" }}>Tables & patterns</span>
+            <span
+              className={styles.benefitChip}
+              style={{
+                background: "rgba(139, 92, 246, 0.12)",
+                color: "#a78bfa",
+              }}
+            >
+              Loaded automatically
+            </span>
+            <span
+              className={styles.benefitChip}
+              style={{
+                background: "rgba(34, 211, 238, 0.12)",
+                color: "#22d3ee",
+              }}
+            >
+              Real code examples
+            </span>
+            <span
+              className={styles.benefitChip}
+              style={{
+                background: "rgba(52, 211, 153, 0.12)",
+                color: "#34d399",
+              }}
+            >
+              DO / DON'T rules
+            </span>
+            <span
+              className={styles.benefitChip}
+              style={{
+                background: "rgba(251, 146, 60, 0.12)",
+                color: "#fb923c",
+              }}
+            >
+              Tables & patterns
+            </span>
           </div>
         </div>
       </section>
@@ -548,8 +590,8 @@ const filtered = useMemo(
           <div>
             <h2 className={styles.deepDiveTitle}>Custom Commands</h2>
             <p className={styles.deepDiveSub}>
-              Prompts you use <strong>over and over</strong> — saved as
-              reusable commands so you never type them again. Supports{" "}
+              Prompts you use <strong>over and over</strong> — saved as reusable
+              commands so you never type them again. Supports{" "}
               <code>$ARGUMENTS</code> for dynamic input.
             </p>
           </div>
@@ -601,20 +643,32 @@ Create a detailed report of all findings.`}</code>
             <div className={styles.commandUsageTitle}>Usage examples</div>
             <div className={styles.commandUsageGrid}>
               <div className={styles.commandUsageItem}>
-                <code className={styles.commandUsageCode}>/code-review BUGS</code>
-                <span className={styles.commandUsageDesc}>Find only logical bugs</span>
+                <code className={styles.commandUsageCode}>
+                  /code-review BUGS
+                </code>
+                <span className={styles.commandUsageDesc}>
+                  Find only logical bugs
+                </span>
               </div>
               <div className={styles.commandUsageItem}>
-                <code className={styles.commandUsageCode}>/code-review SECURITY</code>
-                <span className={styles.commandUsageDesc}>Security audit only</span>
+                <code className={styles.commandUsageCode}>
+                  /code-review SECURITY
+                </code>
+                <span className={styles.commandUsageDesc}>
+                  Security audit only
+                </span>
               </div>
               <div className={styles.commandUsageItem}>
-                <code className={styles.commandUsageCode}>/code-review BUGS, PERFORMANCE</code>
+                <code className={styles.commandUsageCode}>
+                  /code-review BUGS, PERFORMANCE
+                </code>
                 <span className={styles.commandUsageDesc}>Combined review</span>
               </div>
               <div className={styles.commandUsageItem}>
                 <code className={styles.commandUsageCode}>/code-review</code>
-                <span className={styles.commandUsageDesc}>Full general review</span>
+                <span className={styles.commandUsageDesc}>
+                  Full general review
+                </span>
               </div>
             </div>
           </div>
@@ -664,11 +718,11 @@ Create a detailed report of all findings.`}</code>
       <section className={styles.cta}>
         <h2 className={styles.ctaTitle}>Automate the setup</h2>
         <p className={styles.ctaSub}>
-          <strong>ai-skills</strong> installs skills, agents, rules & prompts
-          and generates all config files automatically.
+          <strong>personal-ai-skills</strong> installs skills, agents, rules &
+          prompts and generates all config files automatically.
         </p>
         <div className={styles.ctaCode}>
-          <code>npx ai-skills</code>
+          <code>npx personal-ai-skills</code>
         </div>
         <div className={styles.ctaLinks}>
           <Link to="/explore" className={styles.ctaLink}>

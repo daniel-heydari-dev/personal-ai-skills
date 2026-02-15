@@ -74,11 +74,31 @@ export async function selectContentType(): Promise<ContentType | symbol> {
   const contentType = await p.select({
     message: "What type of content?",
     options: [
-      { value: "skills" as ContentType, label: "Skills", hint: "Best practices and coding guidelines" },
-      { value: "agents" as ContentType, label: "Agents", hint: "Specialized AI personas" },
-      { value: "commands" as ContentType, label: "Commands", hint: "Reusable command templates" },
-      { value: "rules" as ContentType, label: "Rules", hint: "Code style and linting rules" },
-      { value: "prompts" as ContentType, label: "Prompts", hint: "Pre-built prompt templates" },
+      {
+        value: "skills" as ContentType,
+        label: "Skills",
+        hint: "Best practices and coding guidelines",
+      },
+      {
+        value: "agents" as ContentType,
+        label: "Agents",
+        hint: "Specialized AI personas",
+      },
+      {
+        value: "commands" as ContentType,
+        label: "Commands",
+        hint: "Reusable command templates",
+      },
+      {
+        value: "rules" as ContentType,
+        label: "Rules",
+        hint: "Code style and linting rules",
+      },
+      {
+        value: "prompts" as ContentType,
+        label: "Prompts",
+        hint: "Pre-built prompt templates",
+      },
     ],
   });
   return contentType;
@@ -221,7 +241,7 @@ export async function confirmInstall(
 export async function runInteractiveInstall(
   catalog: Map<ContentType, CatalogItem[]>,
 ): Promise<InstallOptions | null> {
-  p.intro("🚀 ai-skills installer");
+  p.intro("🚀 personal-ai-skills installer");
 
   // 1. Select content types (multi-select)
   const contentTypesResult = await selectContentTypes();
@@ -237,7 +257,9 @@ export async function runInteractiveInstall(
   for (const contentType of contentTypes) {
     const availableItems = catalog.get(contentType) || [];
     if (availableItems.length === 0) {
-      p.log.warn(`No ${getContentTypeDisplayName(contentType).toLowerCase()} available, skipping.`);
+      p.log.warn(
+        `No ${getContentTypeDisplayName(contentType).toLowerCase()} available, skipping.`,
+      );
       continue;
     }
 
@@ -270,9 +292,10 @@ export async function runInteractiveInstall(
   }
 
   // Use all available assistants for bridge file generation
-  const assistants = detectedAssistants.length > 0
-    ? detectedAssistants
-    : getAllAssistants().slice(0, 1); // Fallback to first assistant for lock file
+  const assistants =
+    detectedAssistants.length > 0
+      ? detectedAssistants
+      : getAllAssistants().slice(0, 1); // Fallback to first assistant for lock file
 
   // 5. Build options
   const options: InstallOptions = {

@@ -1,19 +1,19 @@
-# ai-skills
+# personal-ai-skills
 
 > Universal AI skills installer — one command to teach any AI assistant best practices.
 
-[![npm version](https://img.shields.io/npm/v/ai-skills.svg)](https://www.npmjs.com/package/ai-skills)
+[![npm version](https://img.shields.io/npm/v/personal-ai-skills.svg)](https://www.npmjs.com/package/personal-ai-skills)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
-## What is ai-skills?
+## What is personal-ai-skills?
 
 A CLI that installs coding guidelines, rules, agent personas, and prompt templates into **any project** — and every AI assistant you use reads them automatically.
 
 **The problem:** You use Claude, Copilot, Cursor, Gemini, and more. Each reads its own config directory. Keeping instructions in sync across editors is painful.
 
-**The solution:** `ai-skills` installs everything into a single `.ai/` directory and generates bridge context files (`CLAUDE.md`, `.cursorrules`, etc.) that tell each editor: _"Read `.ai/` for all instructions."_
+**The solution:** `personal-ai-skills` installs everything into a single `.ai/` directory and generates bridge context files (`CLAUDE.md`, `.cursorrules`, etc.) that tell each editor: _"Read `.ai/` for all instructions."_
 
 ```
 your-project/
@@ -41,13 +41,13 @@ Designed to work with the [skills.sh](https://skills.sh) ecosystem by [Vercel La
 
 ```bash
 # Run directly (no install needed)
-npx ai-skills
+npx personal-ai-skills
 
 # Or install globally
-npm install -g ai-skills
+npm install -g personal-ai-skills
 
 # Or with pnpm
-pnpm add -g ai-skills
+pnpm add -g personal-ai-skills
 ```
 
 The interactive wizard:
@@ -102,7 +102,7 @@ You don't need to configure anything extra. Just open your editor, start coding,
 
 ### Example: After Installing "clean-code"
 
-You run `npx ai-skills add clean-code` in your project. Now when you ask Claude or Copilot to write a function, they'll automatically:
+You run `npx personal-ai-skills add clean-code` in your project. Now when you ask Claude or Copilot to write a function, they'll automatically:
 
 - Use meaningful variable names (no `x`, `temp`, `data`)
 - Keep functions small (< 20 lines)
@@ -118,7 +118,7 @@ Because `.ai/skills/clean-code/SKILL.md` tells them to.
 ### Interactive Mode
 
 ```bash
-ai-skills
+personal-ai-skills
 ```
 
 Multi-select categories → pick items → confirm → done.
@@ -127,46 +127,46 @@ Multi-select categories → pick items → confirm → done.
 
 ```bash
 # Install a single skill
-ai-skills add clean-code
+personal-ai-skills add clean-code
 
 # Install multiple items
-ai-skills add clean-code modern-react
+personal-ai-skills add clean-code modern-react
 
 # Install from GitHub
-ai-skills add user/repo
+personal-ai-skills add user/repo
 
 # Install from a local directory
-ai-skills add ./my-custom-skill
+personal-ai-skills add ./my-custom-skill
 
 # Install everything at once
-ai-skills add --all --yes
+personal-ai-skills add --all --yes
 ```
 
 ### Other Commands
 
 ```bash
 # List available content
-ai-skills list
-ai-skills list skills
-ai-skills list --installed
+personal-ai-skills list
+personal-ai-skills list skills
+personal-ai-skills list --installed
 
 # Search the catalog
-ai-skills search react
+personal-ai-skills search react
 
 # Remove installed content
-ai-skills remove clean-code
+personal-ai-skills remove clean-code
 
 # Generate bridge files manually
-ai-skills bridge
+personal-ai-skills bridge
 
 # Create a new skill template
-ai-skills init skills my-skill
+personal-ai-skills init skills my-skill
 
 # Update installed items
-ai-skills update
+personal-ai-skills update
 
 # Launch web viewer
-ai-skills serve
+personal-ai-skills serve
 ```
 
 ### Options
@@ -185,7 +185,7 @@ ai-skills serve
 
 ```bash
 # Non-interactive install for pipelines
-npx ai-skills add --all --yes
+npx personal-ai-skills add --all --yes
 ```
 
 ---
@@ -350,8 +350,8 @@ What NOT to do.
 Or use the init command:
 
 ```bash
-ai-skills init skills my-skill
-ai-skills init agents my-agent
+personal-ai-skills init skills my-skill
+personal-ai-skills init agents my-agent
 ```
 
 ### Sharing via GitHub
@@ -359,14 +359,14 @@ ai-skills init agents my-agent
 Publish your skill as a repo and anyone can install it:
 
 ```bash
-ai-skills add your-username/your-skill-repo
+personal-ai-skills add your-username/your-skill-repo
 ```
 
 ---
 
 ## Publishing to npm
 
-To publish `ai-skills` so anyone can use it with `npx ai-skills`:
+To publish `personal-ai-skills` so anyone can use it with `npx personal-ai-skills`:
 
 ```bash
 # 1. Login to npm
@@ -379,19 +379,19 @@ pnpm test && pnpm build
 npm publish
 
 # 4. Users can now run:
-npx ai-skills
+npx personal-ai-skills
 ```
 
 ### Scoped Package (Optional)
 
-If `ai-skills` is taken on npm, publish under a scope:
+If `personal-ai-skills` is taken on npm, publish under a scope:
 
 ```bash
-# In package.json: change "name" to "@your-scope/ai-skills"
+# In package.json: change "name" to "@your-scope/personal-ai-skills"
 npm publish --access public
 
 # Users run:
-npx @your-scope/ai-skills
+npx @your-scope/personal-ai-skills
 ```
 
 ---
@@ -400,8 +400,8 @@ npx @your-scope/ai-skills
 
 ```bash
 # Clone and install
-git clone https://github.com/daniel-heydari-dev/ai-skills.git
-cd ai-skills
+git clone https://github.com/daniel-heydari-dev/personal-ai-skills.git
+cd personal-ai-skills
 pnpm install
 
 # Dev (runs TypeScript directly)
@@ -428,7 +428,7 @@ Browse the full catalog with an interactive web UI featuring animated space back
 
 ```bash
 # Launch the web viewer
-ai-skills serve
+personal-ai-skills serve
 
 # Or develop locally
 cd web
@@ -452,7 +452,7 @@ pnpm dev
 ### Project Structure
 
 ```
-ai-skills/
+personal-ai-skills/
 ├── src/
 │   ├── cli.ts          # CLI entry point, command routing
 │   ├── types.ts        # Central type definitions
@@ -500,7 +500,7 @@ ai-skills/
 | ---------------------------- | --------------------------------------------------------- |
 | `.ai/` as canonical dir      | Editor-agnostic, no duplication, one place for everything |
 | Bridge files over symlinks   | Works on all OS, no permission issues, human-readable     |
-| Auto-detect assistants       | Zero config — just run `ai-skills`                        |
+| Auto-detect assistants       | Zero config — just run `personal-ai-skills/`              |
 | Never overwrite bridge files | User customizations are preserved                         |
 | Lock file in `.ai/`          | Tracks versions for updates, keeps everything together    |
 
@@ -521,7 +521,7 @@ cat AGENTS.md      # Shows what Copilot/Codex reads
 
 ### What if I already have a CLAUDE.md?
 
-Bridge files **never overwrite** existing files. If you already have `CLAUDE.md`, `ai-skills` skips it. Add the `.ai/` reference manually:
+Bridge files **never overwrite** existing files. If you already have `CLAUDE.md`, `personal-ai-skills` skips it. Add the `.ai/` reference manually:
 
 ```markdown
 ## AI Configuration
@@ -531,7 +531,7 @@ Read all files in `.ai/skills/` and `.ai/rules/` before writing code.
 
 ### Can I install to multiple projects?
 
-Yes. `cd` into each project and run `ai-skills`. Each project gets its own `.ai/` directory.
+Yes. `cd` into each project and run `personal-ai-skills`. Each project gets its own `.ai/` directory.
 
 ### What should I commit to git?
 

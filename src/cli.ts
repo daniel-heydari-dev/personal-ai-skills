@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * ai-skills CLI
+ * personal-ai-skills CLI
  *
  * Universal AI skills installer for 20+ AI assistants.
  * Install skills, agents, commands, rules, and prompts.
@@ -53,10 +53,10 @@ import { generateBridgeFiles, writeBridgeFiles } from "./bridge.js";
 const VERSION = "1.0.0";
 
 const HELP = `
-ai-skills - Universal AI skills installer
+personal-ai-skills - Universal AI skills installer
 
 USAGE
-  $ ai-skills [command] [options]
+  $ personal-ai-skills [command] [options]
 
 COMMANDS
   add <source>      Install skills from GitHub, URL, or builtin catalog
@@ -78,15 +78,15 @@ OPTIONS
   -h, --help        Show help
 
 EXAMPLES
-  $ ai-skills add clean-code          # Install builtin skill
-  $ ai-skills add user/repo           # Install from GitHub
-  $ ai-skills add ./my-skill          # Install from local path
-  $ ai-skills list                    # List all available items
-  $ ai-skills list skills             # List available skills
-  $ ai-skills list --installed        # List installed items
-  $ ai-skills remove clean-code       # Remove a skill
-  $ ai-skills bridge                  # Generate CLAUDE.md, .cursorrules, etc.
-  $ ai-skills serve                   # Launch web viewer
+  $ personal-ai-skills add clean-code          # Install builtin skill
+  $ personal-ai-skills add user/repo           # Install from GitHub
+  $ personal-ai-skills add ./my-skill          # Install from local path
+  $ personal-ai-skills list                    # List all available items
+  $ personal-ai-skills list skills             # List available skills
+  $ personal-ai-skills list --installed        # List installed items
+  $ personal-ai-skills remove clean-code       # Remove a skill
+  $ personal-ai-skills bridge                  # Generate CLAUDE.md, .cursorrules, etc.
+  $ personal-ai-skills serve                   # Launch web viewer
 
 SUPPORTED ASSISTANTS (20+)
   Claude Code, GitHub Copilot, Cursor, Windsurf, Gemini CLI,
@@ -151,7 +151,7 @@ function parseCliArgs(): CliArgs {
 // Commands
 // ============================================================================
 
-/** Content type shortcut commands (e.g. `ai-skills agents add`) */
+/** Content type shortcut commands (e.g. `personal-ai-skills agents add`) */
 const CONTENT_TYPE_SHORTCUTS: ContentType[] = [
   "agents",
   "commands",
@@ -200,19 +200,29 @@ async function cmdAdd(
       return;
     }
 
-    const assistants = options.agents.length > 0
-      ? getAllAssistants().filter((a) => options.agents.includes(a.id))
-      : (await detectInstalledAssistants()).filter((a) => a.paths[contentType]);
+    const assistants =
+      options.agents.length > 0
+        ? getAllAssistants().filter((a) => options.agents.includes(a.id))
+        : (await detectInstalledAssistants()).filter(
+            (a) => a.paths[contentType],
+          );
 
     if (assistants.length === 0) {
       showError("No assistants detected. Install an AI assistant first.");
       return;
     }
 
-    showInfo(`Installing ${items.length} ${contentType} to ${assistants.map((a) => a.name).join(", ")}...`);
+    showInfo(
+      `Installing ${items.length} ${contentType} to ${assistants.map((a) => a.name).join(", ")}...`,
+    );
 
     const spinner = startSpinner("Installing...");
-    const result = await installItems(items, assistants, options.global ? "global" : "project", "symlink");
+    const result = await installItems(
+      items,
+      assistants,
+      options.global ? "global" : "project",
+      "symlink",
+    );
     handleInstallResult(result, spinner, items, assistants);
 
     // Auto-generate bridge files after successful install
@@ -260,14 +270,16 @@ async function cmdAdd(
     try {
       const fetched = await fetchSkillFromSource(source);
       spinner.stop(`Found: ${fetched.name}`);
-      items = [{
-        id: fetched.id,
-        name: fetched.name,
-        description: fetched.description,
-        type: contentType,
-        path: "",
-        content: fetched.content,
-      }];
+      items = [
+        {
+          id: fetched.id,
+          name: fetched.name,
+          description: fetched.description,
+          type: contentType,
+          path: "",
+          content: fetched.content,
+        },
+      ];
     } catch (error) {
       spinner.stop("Failed to fetch");
       showError(error instanceof Error ? error.message : String(error));
@@ -373,9 +385,7 @@ async function autoGenerateBridgeFiles(
   const { written } = await writeBridgeFiles(files);
 
   if (written.length > 0) {
-    showInfo(
-      `Generated context files: ${written.join(", ")}`,
-    );
+    showInfo(`Generated context files: ${written.join(", ")}`);
   }
 }
 
@@ -386,9 +396,10 @@ async function cmdBridge(
   _args: string[],
   options: CliArgs["options"],
 ): Promise<void> {
-  const assistants = options.agents.length > 0
-    ? getAllAssistants().filter((a) => options.agents.includes(a.id))
-    : await detectInstalledAssistants();
+  const assistants =
+    options.agents.length > 0
+      ? getAllAssistants().filter((a) => options.agents.includes(a.id))
+      : await detectInstalledAssistants();
 
   if (assistants.length === 0) {
     showError("No assistants detected. Install an AI assistant first.");
@@ -420,12 +431,18 @@ async function cmdBridge(
     }
   }
 
-  const overwrite = options.yes ? false : (await p.confirm({
-    message: "Overwrite existing files?",
-    initialValue: false,
-  })) === true;
+  const overwrite = options.yes
+    ? false
+    : (await p.confirm({
+        message: "Overwrite existing files?",
+        initialValue: false,
+      })) === true;
 
-  const { written, skipped } = await writeBridgeFiles(files, process.cwd(), overwrite);
+  const { written, skipped } = await writeBridgeFiles(
+    files,
+    process.cwd(),
+    overwrite,
+  );
 
   if (written.length > 0) {
     showInfo(`Created: ${written.join(", ")}`);
@@ -538,7 +555,7 @@ async function cmdList(
     // Show stats
     const stats = await getCatalogStats();
 
-    console.log("\n📦 ai-skills catalog:\n");
+    console.log("\n📦 personal-ai-skills catalog:\n");
     console.log(`  Skills:   ${stats.skills || 0}`);
     console.log(`  Agents:   ${stats.agents || 0}`);
     console.log(`  Commands: ${stats.commands || 0}`);
@@ -546,7 +563,7 @@ async function cmdList(
     console.log(`  Prompts:  ${stats.prompts || 0}`);
     console.log(`  ─────────────`);
     console.log(`  Total:    ${stats.total}\n`);
-    console.log("Use 'ai-skills list <type>' to see items\n");
+    console.log("Use 'personal-ai-skills list <type>' to see items\n");
   }
 }
 
@@ -768,7 +785,7 @@ async function cmdServe(
   _options: CliArgs["options"],
 ): Promise<void> {
   showInfo(
-    "Web viewer coming soon! For now, use 'ai-skills list' to browse the catalog.",
+    "Web viewer coming soon! For now, use 'personal-ai-skills list' to browse the catalog.",
   );
 
   // TODO: Launch Vite dev server for web viewer
@@ -786,7 +803,7 @@ async function main(): Promise<void> {
 
   // Handle --version
   if (cli.options.version) {
-    console.log(`ai-skills v${VERSION}`);
+    console.log(`personal-ai-skills v${VERSION}`);
     return;
   }
 
@@ -797,7 +814,7 @@ async function main(): Promise<void> {
   }
 
   try {
-    // Content type shortcuts: `ai-skills agents [add|list]`
+    // Content type shortcuts: `personal-ai-skills agents [add|list]`
     if (CONTENT_TYPE_SHORTCUTS.includes(cli.command as ContentType)) {
       cli.options.type = cli.command as ContentType;
       if (cli.args[0] === "add") {
@@ -857,7 +874,7 @@ async function main(): Promise<void> {
           // No command — launch interactive wizard
           await cmdAdd([], cli.options);
         } else {
-          // Try as a skill name shortcut: `ai-skills clean-code`
+          // Try as a skill name shortcut: `personal-ai-skills clean-code`
           const catalog = await loadContentType("skills");
           const skill = catalog.find(
             (s) => s.id === cli.command || s.name === cli.command,

@@ -86,7 +86,7 @@ export function Layout() {
         </nav>
         <div className={styles.headerActions}>
           <a
-            href="https://github.com/daniel-heydari-dev/ai-skills"
+            href="https://github.com/daniel-heydari-dev/personal-ai-skills"
             target="_blank"
             rel="noopener noreferrer"
             className={styles.github}
@@ -115,7 +115,7 @@ export function Layout() {
           </div>
           <div className={styles.footerLinks}>
             <a
-              href="https://github.com/daniel-heydari-dev/ai-skills"
+              href="https://github.com/daniel-heydari-dev/personal-ai-skills"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -123,7 +123,7 @@ export function Layout() {
             </a>
             <span className={styles.footerSep}>·</span>
             <a
-              href="https://github.com/daniel-heydari-dev/ai-skills/issues"
+              href="https://github.com/daniel-heydari-dev/personal-ai-skills/issues"
               target="_blank"
               rel="noopener noreferrer"
             >

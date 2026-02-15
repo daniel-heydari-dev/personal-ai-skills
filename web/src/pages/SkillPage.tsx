@@ -544,7 +544,7 @@ export function SkillPage() {
             <span className={styles.commandLabel}>Interactive</span>
             <div className={styles.commandRow}>
               <span className={styles.commandPrefix}>$</span>
-              <code className={styles.command}>npx ai-skills</code>
+              <code className={styles.command}>npx personal-ai-skills</code>
             </div>
           </div>
           <div className={styles.commandBlock}>
@@ -552,7 +552,7 @@ export function SkillPage() {
             <div className={styles.commandRow}>
               <span className={styles.commandPrefix}>$</span>
               <code className={styles.command}>
-                npx ai-skills install {skill.category}/{skill.id}
+                npx personal-ai-skills install {skill.category}/{skill.id}
               </code>
             </div>
           </div>

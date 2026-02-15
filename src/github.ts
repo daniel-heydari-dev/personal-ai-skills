@@ -227,7 +227,7 @@ export async function listGitHubSkills(
     const response = await fetch(apiUrl, {
       headers: {
         Accept: "application/vnd.github.v3+json",
-        "User-Agent": "ai-skills-cli",
+        "User-Agent": "personal-ai-skills-cli",
       },
     });
 
@@ -263,7 +263,7 @@ async function listGitHubSkillsRoot(
     const response = await fetch(apiUrl, {
       headers: {
         Accept: "application/vnd.github.v3+json",
-        "User-Agent": "ai-skills-cli",
+        "User-Agent": "personal-ai-skills-cli",
       },
     });
 
@@ -295,7 +295,7 @@ async function listGitHubSkillsRoot(
         const dirResponse = await fetch(dirApiUrl, {
           headers: {
             Accept: "application/vnd.github.v3+json",
-            "User-Agent": "ai-skills-cli",
+            "User-Agent": "personal-ai-skills-cli",
           },
         });
 
