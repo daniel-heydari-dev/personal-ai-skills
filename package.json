@@ -33,11 +33,11 @@
   "author": "daniel-heydari",
   "repository": {
     "type": "git",
-    "url": "https://github.com/daniel-heydari-dev/ai-skills"
+    "url": "https://github.com/daniel-heydari-dev/personal-ai-skills"
   },
-  "homepage": "https://github.com/daniel-heydari-dev/ai-skills#readme",
+  "homepage": "https://github.com/daniel-heydari-dev/personal-ai-skills#readme",
   "bugs": {
-    "url": "https://github.com/daniel-heydari-dev/ai-skills/issues"
+    "url": "https://github.com/daniel-heydari-dev/personal-ai-skills/issues"
   },
   "engines": {
     "node": ">=18.0.0"
