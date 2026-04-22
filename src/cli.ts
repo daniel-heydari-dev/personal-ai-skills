@@ -36,6 +36,8 @@ import {
   selectAssistants,
   selectScope,
   selectMethod,
+  selectBridges,
+  ALL_BRIDGE_IDS,
   showInstallSuccess,
   showError,
   showInfo,
@@ -44,7 +46,11 @@ import {
 import { installItems, uninstallItem } from "./install.js";
 import { getInstalledItems, getInstalledItemsByType } from "./lock.js";
 import { fetchSkillFromSource } from "./github.js";
-import { generateBridgeFiles, writeBridgeFiles } from "./bridge.js";
+import {
+  generateBridgeFiles,
+  generateBridgeFilesForIds,
+  writeBridgeFiles,
+} from "./bridge.js";
 
 // ============================================================================
 // Version & Help
@@ -110,6 +116,8 @@ interface CliArgs {
     installed: boolean;
     help: boolean;
     version: boolean;
+    /** Comma-separated bridge IDs, or "all" / "none" */
+    bridges?: string;
   };
 }
 
@@ -125,6 +133,7 @@ function parseCliArgs(): CliArgs {
       installed: { type: "boolean", default: false },
       help: { type: "boolean", short: "h", default: false },
       version: { type: "boolean", short: "v", default: false },
+      bridges: { type: "string" },
     },
   });
 
@@ -143,8 +152,46 @@ function parseCliArgs(): CliArgs {
       installed: values.installed ?? false,
       help: values.help ?? false,
       version: values.version ?? false,
+      bridges: values.bridges as string | undefined,
     },
   };
+}
+
+// ============================================================================
+// Bridge Helpers
+// ============================================================================
+
+/**
+ * Parse the --bridges flag value into a list of bridge IDs.
+ *
+ * --bridges all          → ALL_BRIDGE_IDS
+ * --bridges none         → []
+ * --bridges claude,vscode → ['claude', 'vscode']
+ * undefined              → null (caller should prompt interactively)
+ */
+function parseBridgeFlag(bridges: string | undefined): string[] | null {
+  if (bridges === undefined) return null;
+  if (bridges === "none") return [];
+  if (bridges === "all") return ALL_BRIDGE_IDS;
+  return bridges.split(",").map((s) => s.trim()).filter(Boolean);
+}
+
+/**
+ * Resolve bridge IDs from the --bridges flag or interactive prompt.
+ * Returns [] to skip bridge generation, or a list of IDs to generate.
+ */
+async function resolveBridgeIds(
+  options: CliArgs["options"],
+): Promise<string[]> {
+  const fromFlag = parseBridgeFlag(options.bridges);
+  if (fromFlag !== null) return fromFlag;
+
+  // --yes skips the prompt and uses auto-detection (all known bridges)
+  if (options.yes) return ALL_BRIDGE_IDS;
+
+  const selected = await selectBridges();
+  if (p.isCancel(selected)) return [];
+  return selected as string[];
 }
 
 // ============================================================================
@@ -227,7 +274,8 @@ async function cmdAdd(
 
     // Auto-generate bridge files after successful install
     if (result.successful > 0 && !options.global) {
-      await autoGenerateBridgeFiles(assistants);
+      const bridgeIds = await resolveBridgeIds(options);
+      await autoGenerateBridgeFiles(assistants, bridgeIds);
     }
     return;
   }
@@ -249,7 +297,8 @@ async function cmdAdd(
 
     // Auto-generate bridge files after successful install
     if (result.successful > 0 && installOptions.scope === "project") {
-      await autoGenerateBridgeFiles(installOptions.assistants);
+      const bridgeIds = await resolveBridgeIds(options);
+      await autoGenerateBridgeFiles(installOptions.assistants, bridgeIds);
     }
     return;
   }
@@ -306,7 +355,8 @@ async function cmdAdd(
 
   // Auto-generate bridge files after successful install
   if (result.successful > 0 && scope === "project") {
-    await autoGenerateBridgeFiles(assistants);
+    const bridgeIds = await resolveBridgeIds(options);
+    await autoGenerateBridgeFiles(assistants, bridgeIds);
   }
 }
 
@@ -376,37 +426,43 @@ async function resolveMethod(
 
 /**
  * Auto-generate bridge files after a successful install.
- * Only creates files that don't already exist (never overwrites).
+ *
+ * When bridgeIds is provided, uses those specific bridges.
+ * Otherwise falls back to assistant-based detection.
  */
 async function autoGenerateBridgeFiles(
   assistants: AssistantConfig[],
+  bridgeIds?: string[],
 ): Promise<void> {
-  const files = await generateBridgeFiles(assistants);
-  const { written } = await writeBridgeFiles(files);
+  const files =
+    bridgeIds !== undefined
+      ? await generateBridgeFilesForIds(bridgeIds)
+      : await generateBridgeFiles(assistants);
 
+  if (files.length === 0) return;
+
+  const { written } = await writeBridgeFiles(files);
   if (written.length > 0) {
     showInfo(`Generated context files: ${written.join(", ")}`);
   }
 }
 
 /**
- * Bridge command — generate context files for detected editors
+ * Bridge command — generate context files for selected editors
  */
 async function cmdBridge(
   _args: string[],
   options: CliArgs["options"],
 ): Promise<void> {
-  const assistants =
-    options.agents.length > 0
-      ? getAllAssistants().filter((a) => options.agents.includes(a.id))
-      : await detectInstalledAssistants();
+  // Resolve which bridge types to generate
+  const bridgeIds = await resolveBridgeIds(options);
 
-  if (assistants.length === 0) {
-    showError("No assistants detected. Install an AI assistant first.");
+  if (bridgeIds.length === 0) {
+    showInfo("No bridges selected.");
     return;
   }
 
-  const files = await generateBridgeFiles(assistants);
+  const files = await generateBridgeFilesForIds(bridgeIds);
 
   if (files.length === 0) {
     showInfo("No bridge files to generate.");

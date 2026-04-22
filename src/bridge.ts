@@ -373,5 +373,44 @@ export async function writeBridgeFiles(
  * Get all available bridge file types
  */
 export function getAvailableBridgeTypes(): string[] {
-  return Object.keys(BRIDGE_GENERATORS);
+  return [...Object.keys(BRIDGE_GENERATORS), "vscode"];
+}
+
+/**
+ * Generate bridge files for an explicit list of bridge IDs.
+ *
+ * - `['all']` → all known bridge types
+ * - `['none']` → empty array (no bridges)
+ * - `['claude', 'vscode', ...]` → only those bridge types
+ */
+export async function generateBridgeFilesForIds(
+  bridgeIds: string[],
+  projectRoot: string = process.cwd(),
+): Promise<BridgeFile[]> {
+  if (bridgeIds.length === 0 || bridgeIds.includes("none")) {
+    return [];
+  }
+
+  const dirs = await getExistingDirs(projectRoot);
+  if (dirs.length === 0) {
+    dirs.push("skills", "rules");
+  }
+
+  const keys = bridgeIds.includes("all")
+    ? new Set(getAvailableBridgeTypes())
+    : new Set(bridgeIds);
+
+  const files: BridgeFile[] = [];
+  for (const key of keys) {
+    if (key === "vscode") {
+      files.push(await vscodeBridge(dirs, projectRoot));
+    } else {
+      const generator = BRIDGE_GENERATORS[key];
+      if (generator) {
+        files.push(generator(dirs));
+      }
+    }
+  }
+
+  return files;
 }

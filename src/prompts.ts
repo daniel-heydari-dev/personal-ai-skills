@@ -359,3 +359,46 @@ export function startSpinner(message: string): ReturnType<typeof p.spinner> {
   s.start(message);
   return s;
 }
+
+// ============================================================================
+// Bridge Selection
+// ============================================================================
+
+export interface BridgeOption {
+  value: string;
+  label: string;
+  hint: string;
+}
+
+const BRIDGE_OPTIONS: BridgeOption[] = [
+  { value: "claude", label: "Claude Code", hint: "CLAUDE.md" },
+  { value: "cursor", label: "Cursor", hint: ".cursor/rules" },
+  { value: "vscode", label: "VS Code", hint: ".vscode/settings.json" },
+  {
+    value: "copilot",
+    label: "GitHub Copilot",
+    hint: "AGENTS.md + .github/copilot-instructions.md",
+  },
+  { value: "codex", label: "OpenAI Codex", hint: "AGENTS.md" },
+  { value: "gemini", label: "Gemini CLI", hint: "GEMINI.md" },
+  { value: "windsurf", label: "Windsurf", hint: ".windsurfrules" },
+];
+
+/**
+ * All known bridge IDs
+ */
+export const ALL_BRIDGE_IDS: string[] = BRIDGE_OPTIONS.map((o) => o.value);
+
+/**
+ * Interactively ask which AI assistants should get bridge files.
+ * Returns selected bridge IDs, 'all', or 'none'.
+ */
+export async function selectBridges(): Promise<string[] | symbol> {
+  const result = await p.multiselect({
+    message: "Which AI assistants should get bridge files?",
+    options: BRIDGE_OPTIONS,
+    required: false,
+  });
+
+  return result;
+}
