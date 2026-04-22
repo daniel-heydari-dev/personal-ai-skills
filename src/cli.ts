@@ -671,6 +671,157 @@ async function cmdUpdate(
   );
 }
 
+// ============================================================================
+// Spec Helpers
+// ============================================================================
+
+/**
+ * Find the package templates directory (works in both dev and installed)
+ */
+function getPackageTemplatesRoot(): string {
+  const devPath = path.join(
+    path.dirname(new URL(import.meta.url).pathname),
+    "..",
+    "templates",
+  );
+  const prodPath = path.join(
+    path.dirname(new URL(import.meta.url).pathname),
+    "..",
+    "..",
+    "templates",
+  );
+  return fs.existsSync(devPath) ? devPath : prodPath;
+}
+
+/**
+ * Update the Spec Map table in root SPEC.md, appending a new row.
+ * Finds the table with a "| Topic" header and inserts a row after the last `|` line.
+ */
+async function updateSpecMap(
+  rootSpecPath: string,
+  specName: string,
+  specRelPath: string,
+): Promise<void> {
+  let content: string;
+  try {
+    content = await fs.promises.readFile(rootSpecPath, "utf-8");
+  } catch {
+    return; // Root SPEC.md doesn't exist — nothing to update
+  }
+
+  const lines = content.split("\n");
+  // Find the "Spec Map" table header line
+  const headerIdx = lines.findIndex((l) => l.includes("| Topic"));
+  if (headerIdx === -1) return; // No Spec Map table found
+
+  // Find the end of the table (last line that starts with |)
+  let lastTableLine = headerIdx;
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    if (lines[i].trimStart().startsWith("|")) {
+      lastTableLine = i;
+    } else if (lines[i].trim() !== "" && !lines[i].trimStart().startsWith("|")) {
+      break;
+    }
+  }
+
+  const newRow = `| ${specName} | ${specRelPath} |`;
+  lines.splice(lastTableLine + 1, 0, newRow);
+  await fs.promises.writeFile(rootSpecPath, lines.join("\n"), "utf-8");
+}
+
+/**
+ * init spec command — scaffold SPEC.md files using the three-tier architecture.
+ *
+ *   personal-ai-skills init spec           → creates SPEC.md in project root
+ *   personal-ai-skills init spec <name>    → creates docs/spec/<name>/SPEC.md
+ *                                            and updates root SPEC.md Spec Map
+ */
+async function cmdInitSpec(args: string[]): Promise<void> {
+  const specName = args[0];
+  const templatesRoot = getPackageTemplatesRoot();
+  const projectRoot = process.cwd();
+
+  if (!specName) {
+    // ── Root SPEC.md ───────────────────────────────────────────────────────
+    const destPath = path.join(projectRoot, "SPEC.md");
+
+    // Check if already exists
+    const exists = fs.existsSync(destPath);
+    if (exists) {
+      const overwrite = await p.confirm({
+        message: "SPEC.md already exists. Overwrite?",
+        initialValue: false,
+      });
+      if (p.isCancel(overwrite) || !overwrite) {
+        p.cancel("Cancelled");
+        return;
+      }
+    }
+
+    const projectName = await p.text({
+      message: "Project name:",
+      placeholder: path.basename(projectRoot),
+      defaultValue: path.basename(projectRoot),
+    });
+    if (p.isCancel(projectName)) { p.cancel("Cancelled"); return; }
+
+    const description = await p.text({
+      message: "One-line description:",
+      placeholder: "What does this project do?",
+    });
+    if (p.isCancel(description)) { p.cancel("Cancelled"); return; }
+
+    const stack = await p.text({
+      message: "Tech stack:",
+      placeholder: "TypeScript, Node.js, React",
+    });
+    if (p.isCancel(stack)) { p.cancel("Cancelled"); return; }
+
+    const slug = String(projectName)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+
+    let template = await fs.promises.readFile(
+      path.join(templatesRoot, "shared", "SPEC.root.md"),
+      "utf-8",
+    );
+    template = template
+      .replace(/\{\{PROJECT_NAME\}\}/g, String(projectName))
+      .replace(/\{\{ONE_LINE_DESCRIPTION\}\}/g, String(description))
+      .replace(/\{\{TECH_STACK\}\}/g, String(stack))
+      .replace(/\{\{PROJECT_SLUG\}\}/g, slug);
+
+    await fs.promises.writeFile(destPath, template, "utf-8");
+    p.outro(`Created SPEC.md`);
+  } else {
+    // ── Page SPEC.md ───────────────────────────────────────────────────────
+    const specDir = path.join(projectRoot, "docs", "spec", specName);
+    const specFile = path.join(specDir, "SPEC.md");
+
+    if (fs.existsSync(specFile)) {
+      showError(`docs/spec/${specName}/SPEC.md already exists`);
+      return;
+    }
+
+    let template = await fs.promises.readFile(
+      path.join(templatesRoot, "shared", "SPEC.page.md"),
+      "utf-8",
+    );
+    template = template.replace(/\{\{PAGE_NAME\}\}/g, specName);
+
+    await fs.promises.mkdir(specDir, { recursive: true });
+    await fs.promises.writeFile(specFile, template, "utf-8");
+
+    // Update root SPEC.md Spec Map
+    const rootSpecPath = path.join(projectRoot, "SPEC.md");
+    const relPath = `docs/spec/${specName}/SPEC.md`;
+    await updateSpecMap(rootSpecPath, specName, relPath);
+
+    p.outro(`Created docs/spec/${specName}/SPEC.md${fs.existsSync(rootSpecPath) ? " and updated SPEC.md Spec Map" : ""}`);
+  }
+}
+
 /**
  * Init command
  */
@@ -678,6 +829,12 @@ async function cmdInit(
   args: string[],
   _options: CliArgs["options"],
 ): Promise<void> {
+  // Intercept 'spec' subcommand before content-type selection
+  if (args[0] === "spec") {
+    await cmdInitSpec(args.slice(1));
+    return;
+  }
+
   const typeArg = args[0] as ContentType | undefined;
   const name = args[1];
 
