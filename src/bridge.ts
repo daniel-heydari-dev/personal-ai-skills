@@ -29,6 +29,12 @@ export interface BridgeFile {
   content: string;
   /** Short description */
   description: string;
+  /**
+   * When true, always write even if the file already exists.
+   * Used by the VS Code bridge which merges into .vscode/settings.json
+   * rather than replacing it.
+   */
+  alwaysWrite?: boolean;
 }
 
 // ============================================================================
@@ -194,6 +200,58 @@ ${buildDirectorySection(dirs)}${buildCoreInstructions(dirs)}`,
   };
 }
 
+/**
+ * VS Code bridge — merges Copilot instruction settings into .vscode/settings.json.
+ * Reads the existing file and adds keys only if not already present,
+ * preserving all other user settings.
+ */
+async function vscodeBridge(
+  dirs: string[],
+  projectRoot: string,
+): Promise<BridgeFile> {
+  const settingsPath = path.join(projectRoot, ".vscode", "settings.json");
+  let existing: Record<string, unknown> = {};
+
+  try {
+    const raw = await fs.promises.readFile(settingsPath, "utf-8");
+    existing = JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    // File doesn't exist or contains invalid JSON — start fresh
+  }
+
+  const rulesPath = dirs.includes("rules") ? ".ai/rules/always.md" : ".ai/rules/";
+  const copilotSettings: Record<string, unknown> = {
+    "github.copilot.chat.codeGeneration.instructions": [
+      { file: rulesPath },
+      {
+        text: "For skills, load files from .ai/skills/ when the topic matches.",
+      },
+    ],
+    "github.copilot.chat.testGeneration.instructions": [
+      { file: ".ai/skills/testing-best-practices/SKILL.md" },
+    ],
+    "github.copilot.chat.reviewSelection.instructions": [
+      { file: ".ai/agents/code-reviewer/AGENT.md" },
+    ],
+  };
+
+  // Merge: keep all existing keys; add copilot keys only if not already present
+  const merged: Record<string, unknown> = { ...existing };
+  for (const [key, value] of Object.entries(copilotSettings)) {
+    if (!(key in merged)) {
+      merged[key] = value;
+    }
+  }
+
+  return {
+    editorId: "vscode",
+    filePath: ".vscode/settings.json",
+    description: "VS Code settings with Copilot instructions",
+    content: JSON.stringify(merged, null, 2),
+    alwaysWrite: true,
+  };
+}
+
 // ============================================================================
 // Registry
 // ============================================================================
@@ -212,6 +270,7 @@ const BRIDGE_GENERATORS: Record<string, (dirs: string[]) => BridgeFile> = {
 const ASSISTANT_TO_BRIDGE: Record<string, string> = {
   claude: "claude",
   cursor: "cursor",
+  vscode: "vscode",
   copilot: "copilot",
   gemini: "gemini",
   antigravity: "gemini",
@@ -261,9 +320,14 @@ export async function generateBridgeFiles(
   // Generate bridge files
   const files: BridgeFile[] = [];
   for (const key of bridgeKeys) {
-    const generator = BRIDGE_GENERATORS[key];
-    if (generator) {
-      files.push(generator(dirs));
+    if (key === "vscode") {
+      // VS Code bridge is async — it reads existing settings.json to merge
+      files.push(await vscodeBridge(dirs, projectRoot));
+    } else {
+      const generator = BRIDGE_GENERATORS[key];
+      if (generator) {
+        files.push(generator(dirs));
+      }
     }
   }
 
@@ -285,8 +349,9 @@ export async function writeBridgeFiles(
   for (const file of files) {
     const fullPath = path.join(projectRoot, file.filePath);
 
-    // Don't overwrite existing files unless explicitly asked
-    if (!overwrite) {
+    // Don't overwrite existing files unless explicitly asked.
+    // alwaysWrite bypasses this guard (used by VS Code bridge which merges JSON).
+    if (!overwrite && !file.alwaysWrite) {
       try {
         await fs.promises.access(fullPath);
         skipped.push(file.filePath);
