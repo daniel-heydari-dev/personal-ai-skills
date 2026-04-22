@@ -418,9 +418,12 @@ export async function generateBridgeFilesForIds(
     dirs.push("skills", "rules");
   }
 
+  // Map assistant IDs (e.g. 'codex') to bridge keys (e.g. 'universal')
+  const resolveKey = (id: string): string => ASSISTANT_TO_BRIDGE[id] ?? id;
+
   const keys = bridgeIds.includes("all")
     ? new Set(getAvailableBridgeTypes())
-    : new Set(bridgeIds);
+    : new Set(bridgeIds.map(resolveKey));
 
   const files: BridgeFile[] = [];
   for (const key of keys) {
