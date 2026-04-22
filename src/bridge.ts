@@ -137,12 +137,34 @@ function buildCoreInstructions(dirs: string[]): string {
 // ============================================================================
 
 function claudeBridge(dirs: string[]): BridgeFile {
+  const skillsLine = dirs.includes("skills")
+    ? "\n- Skills: `.ai/skills/` — load by file type / topic"
+    : "";
+  const agentsLine = dirs.includes("agents")
+    ? "\n- Agents: `.ai/agents/` — load only when that role is requested"
+    : "";
+  const rulesLine = dirs.includes("rules")
+    ? "\n- Rules: `.ai/rules/` — **always follow**, read before writing code"
+    : "";
+  const commandsLine = dirs.includes("commands")
+    ? "\n- Commands: `.ai/commands/` — load when user references a command"
+    : "";
+  const specsLine =
+    "\n- Sub-specs: `docs/spec/*/SPEC.md` — load only when relevant";
+
   return {
     editorId: "claude",
     filePath: "CLAUDE.md",
-    description: "Claude Code context file",
+    description: "Claude Code context file (map pattern)",
     content: `# CLAUDE.md
-${buildDirectorySection(dirs)}${buildCoreInstructions(dirs)}`,
+
+## ⚡ ALWAYS LOAD
+- Root spec: \`SPEC.md\` (if it exists)${rulesLine}
+
+## 🗺️ REFERENCE MAP (load only when relevant)
+${skillsLine}${agentsLine}${commandsLine}${specsLine}
+- Obsidian brain: \`~/ai-brain/wiki/hot.md\` — recent session context
+`,
   };
 }
 
