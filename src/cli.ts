@@ -554,7 +554,7 @@ async function cmdRemove(
       path: "",
     };
 
-    const success = await uninstallItem(catalogItem, assistant, scope);
+    const success = await uninstallItem(catalogItem, scope);
     if (success) removed++;
   }
 
@@ -998,13 +998,8 @@ async function cmdServe(
   _options: CliArgs["options"],
 ): Promise<void> {
   showInfo(
-    "Web viewer coming soon! For now, use 'personal-ai-skills list' to browse the catalog.",
+    "Use 'personal-ai-skills list' to browse the catalog, or open the web viewer manually.",
   );
-
-  // TODO: Launch Vite dev server for web viewer
-  // const { createServer } = await import('vite');
-  // const server = await createServer({ ... });
-  // await server.listen();
 }
 
 // ============================================================================

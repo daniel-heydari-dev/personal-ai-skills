@@ -123,7 +123,7 @@ export async function installItems(
   items: CatalogItem[],
   assistants: AssistantConfig[],
   scope: InstallScope,
-  _method: InstallMethod,
+  method: InstallMethod,
   projectRoot: string = process.cwd(),
 ): Promise<InstallSummary> {
   const results: InstallResult[] = [];
@@ -152,7 +152,7 @@ export async function installItems(
         installedAt: new Date().toISOString(),
         assistants: assistantIds,
         scope,
-        method: "symlink",
+        method,
       };
       await updateLockFile(installedItem, scope, projectRoot);
     }
@@ -169,13 +169,12 @@ export async function installItems(
 }
 
 /**
- * Uninstall item from an assistant.
+ * Uninstall item.
  *
  * All content lives in canonical .ai/ — just remove from there.
  */
 export async function uninstallItem(
   item: CatalogItem,
-  assistant: AssistantConfig,
   scope: InstallScope,
   projectRoot: string = process.cwd(),
 ): Promise<boolean> {
@@ -198,7 +197,6 @@ export async function uninstallItem(
  */
 export async function isItemInstalled(
   item: CatalogItem,
-  assistant: AssistantConfig,
   scope: InstallScope,
   projectRoot: string = process.cwd(),
 ): Promise<boolean> {

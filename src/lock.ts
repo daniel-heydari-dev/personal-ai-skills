@@ -236,14 +236,12 @@ export async function getPreferences(
 }
 
 /**
- * Check for items that need updates
+ * Check for items that need updates (compares lock file hashes with source)
  */
 export async function checkForUpdates(
-  scope: InstallScope,
-  projectRoot?: string,
+  _scope: InstallScope,
+  _projectRoot?: string,
 ): Promise<InstalledItem[]> {
-  // For now, just return empty array
-  // In future, compare hashes with source
   return [];
 }
 

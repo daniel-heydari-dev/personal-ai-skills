@@ -33,15 +33,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
  * Get templates root directory
  */
 export function getTemplatesRoot(): string {
-  // In development, templates are at ../templates
-  // In production (dist), templates are at ../templates
   const devPath = path.join(__dirname, "..", "templates");
   const prodPath = path.join(__dirname, "..", "..", "templates");
-
-  if (fs.existsSync(devPath)) {
+  try {
+    fs.statSync(devPath);
     return devPath;
+  } catch {
+    return prodPath;
   }
-  return prodPath;
 }
 
 /**
@@ -302,7 +301,9 @@ export async function loadContentType(
   const templatesRoot = getTemplatesRoot();
   const typeDir = path.join(templatesRoot, type);
 
-  if (!fs.existsSync(typeDir)) {
+  try {
+    fs.statSync(typeDir);
+  } catch {
     return [];
   }
 
