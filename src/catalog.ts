@@ -335,6 +335,7 @@ export async function loadCatalog(): Promise<Map<ContentType, CatalogItem[]>> {
     "commands",
     "rules",
     "prompts",
+    "integration",
   ];
 
   await Promise.all(

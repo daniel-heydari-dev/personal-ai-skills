@@ -15,43 +15,44 @@ const workflowSteps = [
     title: "Create SPEC.md (three-tier)",
     icon: "📋",
     color: "#8b5cf6",
-    desc: "Scaffold your project spec with the three-tier architecture: global identity → project rules → page-level specs. Use init spec to generate the files.",
+    desc: "Scaffold your project spec with the three-tier architecture. The SPEC.md root file is always loaded (~150 tokens). Feature specs in docs/spec/*/ are loaded on demand — keeping your total always-load budget under 1,100 tokens.",
     details: [
-      "npx personal-ai-skills init spec  →  creates root SPEC.md",
+      "npx personal-ai-skills init spec  →  creates root SPEC.md with Spec Map",
       "npx personal-ai-skills init spec auth  →  creates docs/spec/auth/SPEC.md",
-      "Root SPEC.md auto-updates its Spec Map table",
-      "Goal: ~150 tokens loaded always, rest on demand",
+      "Root SPEC.md Spec Map table is auto-updated with each new feature spec",
+      "Three tiers: ~/.ai/ global identity · .ai/ project · docs/spec/ feature specs",
     ],
-    prompt: `# Three-tier config layout
-# ─────────────────────────────
-# GLOBAL   ~/.ai/           ← identity + integrations (~50 tokens)
-# PROJECT  .ai/             ← skills, rules, agents
-# SPECS    docs/spec/*/     ← page-by-page context
+    prompt: `# Three-tier layout
+# ─────────────────────────────────────────────
+# GLOBAL   ~/.ai/           ← identity, integrations (~50 tokens)
+# PROJECT  .ai/             ← skills, rules, agents (loaded on demand)
+# SPECS    docs/spec/*/     ← page-by-page context (loaded when relevant)
 
-# 1. Scaffold root spec
+# 1. Scaffold root spec (creates SPEC.md with Spec Map table)
 npx personal-ai-skills init spec
 
-# 2. Add a feature spec (auto-updates SPEC.md table)
+# 2. Add a feature spec (auto-appends a row to SPEC.md Spec Map)
 npx personal-ai-skills init spec auth
 npx personal-ai-skills init spec billing
+npx personal-ai-skills init spec dashboard
 
-# Total always-load budget: ~700–1,100 tokens
+# Result: always-load budget ~700–1,100 tokens
 # (vs ~6,000 tokens with the old content-dump approach)`,
     promptLabel: "init spec workflow",
   },
   {
     num: 2,
-    title: "Refine with AI",
+    title: "Refine SPEC.md with AI",
     icon: "✨",
     color: "#22d3ee",
-    desc: "After paste prompt to ChatGPT / Claude and get a structured technical specification back. Copy it into SPEC.MD.",
+    desc: "Paste your project description into any AI and ask it to return a structured technical spec. Copy the result back into SPEC.md. Your spec is the single source of truth for every AI session.",
     details: [
-      "Paste your project description to any AI",
+      "Paste your project idea to Claude, ChatGPT, or Gemini",
       "AI returns a full technical spec document",
-      "Copy the result into your SPEC.MD file",
-      'Ask: "Please format this as proper markdown"',
+      "Copy the result into your SPEC.md file",
+      'Ask: "Format this as proper markdown with these sections:"',
     ],
-    prompt: `We are building an app described in @SPEC.MD.
+    prompt: `We are building an app described in @SPEC.md.
 Please improve the specification and format
 this file as proper markdown.
 
@@ -66,177 +67,191 @@ Include sections for:
   },
   {
     num: 3,
-    title: "Configure Your AI (map pattern)",
-    icon: "⚙️",
-    color: "#34d399",
-    desc: "Generate bridge files for each AI tool. CLAUDE.md acts as a MAP — tiny index that tells the AI where files live, not what's in them. Under 200 tokens always-load.",
+    title: "Install Skills & Integrations",
+    icon: "⚡",
+    color: "#e879f9",
+    desc: "Install skill files that teach your AI best practices for your tech stack — DO/DON'T rules, code patterns, and real examples. Also install memory integrations (Obsidian, claude-mem, graphify) once here.",
     details: [
-      "npx personal-ai-skills bridge  →  interactive bridge selection",
-      "--bridges claude,vscode  →  specific editors only",
-      "--bridges none  →  skip bridge generation",
-      "VS Code bridge merges into .vscode/settings.json (never overwrites)",
+      "Skills are SKILL.md files: structured DO/DON'T rules + code examples",
+      "AI reads them automatically and applies best practices to every response",
+      "npx personal-ai-skills  →  interactive wizard (picks type, items, scope)",
+      "npx personal-ai-skills add clean-code  →  install a specific skill directly",
     ],
-    prompt: `# Generated CLAUDE.md (map pattern, < 200 tokens)
-# ─────────────────────────────────────────────
+    prompt: `# Interactive wizard — covers skills, agents, integrations
+npx personal-ai-skills
 
-## ⚡ ALWAYS LOAD
-- Root spec: \`SPEC.md\`
-- Rules: \`.ai/rules/\` — always follow
+# Or install specific items directly:
+npx personal-ai-skills add clean-code
+npx personal-ai-skills add modern-react
+npx personal-ai-skills add testing-best-practices
 
-## 🗺️ REFERENCE MAP (load only when relevant)
-- Skills: \`.ai/skills/\` — load by file type
-- Agents: \`.ai/agents/\` — load when role requested
-- Sub-specs: \`docs/spec/*/SPEC.md\` — load when relevant
-- Obsidian brain: \`~/ai-brain/wiki/hot.md\`
+# Install memory stack integrations (one-time)
+npx personal-ai-skills add obsidian --type integration
+npx personal-ai-skills add claude-mem --type integration
+npx personal-ai-skills add graphify --type integration
 
-# Interactive bridge selection
-npx personal-ai-skills bridge
-# ◯ Claude Code    (CLAUDE.md)
-# ◯ Cursor         (.cursor/rules)
-# ◯ VS Code        (.vscode/settings.json)
-# ◯ GitHub Copilot (AGENTS.md)
-# ◯ Gemini CLI     (GEMINI.md)
-# ◯ Windsurf       (.windsurfrules)`,
-    promptLabel: "Map-pattern bridge generation",
+# Each integration shows a "Next step:" command after install:
+# obsidian  → git clone https://github.com/AgriciDaniel/claude-obsidian ~/ai-brain
+# claude-mem → npx claude-mem install
+# graphify  → pip install graphifyy && graphify install`,
+    promptLabel: "Install workflow",
   },
   {
     num: 4,
-    title: "Set Up MCP Tools",
-    icon: "🔌",
-    color: "#fb923c",
-    desc: "Connect documentation tools like Context7 so your AI can look up real, up-to-date library docs instead of hallucinating.",
+    title: "Configure Your AI (map pattern)",
+    icon: "⚙️",
+    color: "#34d399",
+    desc: "Generate bridge files for each AI tool you use. CLAUDE.md acts as a MAP — a tiny index under 200 tokens that tells the AI where files live, not what's in them. VS Code bridge merges into settings.json without overwriting.",
     details: [
-      "Install Context7 MCP (context7.com)",
-      "AI auto-fetches docs for any library",
-      "No more outdated API suggestions",
-      "Add rule: always use Context7 for docs",
+      "npx personal-ai-skills bridge  →  interactive bridge selection",
+      "--bridges claude,vscode  →  target specific editors only",
+      "--bridges none  →  skip bridge generation entirely",
+      "VS Code bridge merges Copilot keys into .vscode/settings.json safely",
     ],
-    prompt: `# Add to CLAUDE.md or Cursor Rules:
+    prompt: `# Generated CLAUDE.md (map pattern — < 200 tokens)
+# ─────────────────────────────────────────────
 
-Always use Context7 MCP when I need
-library/API documentation, code generation,
-setup or configuration steps.
+## ⚡ ALWAYS LOAD
+- Root spec: SPEC.md
+- Rules: .ai/rules/  — always follow
 
-# Then in any prompt you can say:
-"Use web search or Context7 MCP to look up
-docs for better-auth and TipTap."`,
-    promptLabel: "MCP configuration",
+## 🗺️ REFERENCE MAP (load only when relevant)
+- Skills:    .ai/skills/      — load by file type
+- Agents:    .ai/agents/      — load when role requested
+- Sub-specs: docs/spec/*/SPEC.md — load when feature mentioned
+- Obsidian:  ~/ai-brain/wiki/hot.md
+
+# Interactive bridge selection
+npx personal-ai-skills bridge
+# ◯ Claude Code    → CLAUDE.md
+# ◯ Cursor         → .cursor/rules/
+# ◯ VS Code        → .vscode/settings.json  (JSON merge)
+# ◯ GitHub Copilot → AGENTS.md
+# ◯ Gemini CLI     → GEMINI.md
+# ◯ Windsurf       → .windsurfrules`,
+    promptLabel: "Map-pattern bridge generation",
   },
   {
     num: 5,
+    title: "Set Up MCP Tools",
+    icon: "🔌",
+    color: "#fb923c",
+    desc: "Connect documentation tools like Context7 so your AI looks up real, up-to-date library docs instead of relying on potentially outdated training data.",
+    details: [
+      "Install Context7 MCP at context7.com",
+      "AI auto-fetches live docs for any library or framework",
+      "No more hallucinated APIs or outdated function signatures",
+      "Add a rule: always use Context7 for docs — put it in CLAUDE.md",
+    ],
+    prompt: `# Add to CLAUDE.md → ALWAYS LOAD section:
+
+Always use Context7 MCP when looking up
+library docs, API references, or configuration.
+
+# Then in any session you can say:
+"Use Context7 to look up the latest
+better-auth and TipTap APIs."
+
+# Or add it to a skill file so it applies
+# automatically for that technology:
+## Rules
+- Use Context7 MCP before generating any
+  library-specific code`,
+    promptLabel: "MCP configuration",
+  },
+  {
+    num: 6,
     title: "Create Subagents",
     icon: "🤖",
     color: "#f472b6",
-    desc: "Build specialized sub-agents for repeatable tasks — docs lookup, testing, review — that run in parallel.",
+    desc: "Build specialized sub-agents for repeatable tasks — docs lookup, testing, code review — that run in isolated context and return results to the main session.",
     details: [
-      "Subagent = helper agent for a subtask",
-      "Runs in isolated context, returns results",
-      "Example: DocsExplorer for docs lookup",
-      "Can batch multiple lookups in parallel",
+      "Subagent = a helper agent focused on one task",
+      "Runs in its own context window, returns results to main session",
+      "Example: DocsExplorer fetches live library docs in parallel",
+      "Install from catalog: npx personal-ai-skills add docs-explorer --type agent",
     ],
-    prompt: `# .claude/agents/DocsExplorer.md
+    prompt: `# .ai/agents/DocsExplorer/AGENT.md
 ---
 name: DocsExplorer
-description: Documentation lookup specialist
+description: Documentation lookup specialist. Use when
+  the user asks about library APIs or framework docs.
 tools: WebFetch, WebSearch, MCPSearch
 model: sonnet
 ---
 
 You are a documentation specialist.
-Fetch up-to-date docs for libraries.
+Fetch up-to-date docs for any library.
 
 ## Strategy
 1. Use Context7 MCP as primary source
-2. Fall back to web search
+2. Fall back to web search if needed
 3. Try llms.txt paths for LLM-friendly docs
-4. Execute ALL lookups in parallel`,
+4. Execute ALL lookups in parallel for speed`,
     promptLabel: "Example subagent definition",
   },
   {
-    num: 6,
+    num: 7,
     title: "Build & Iterate",
     icon: "🔄",
     color: "#60a5fa",
-    desc: "Start building. After each task, ask the AI to update SPEC.MD. Always reference it to keep context accurate.",
+    desc: "Start building. Reference SPEC.md in every major prompt so the AI always has full context. After each feature, ask the AI to update SPEC.md — it's your living documentation.",
     details: [
-      "Reference @SPEC.MD in every major prompt",
-      "Ask AI to update SPEC.MD after changes",
-      "Use subagents for docs & validation",
-      "Evaluate code against spec & official docs",
+      'Start every session: "We\'re building @SPEC.md"',
+      "After each feature: ask AI to update SPEC.md to reflect changes",
+      "Use subagents for docs lookup and code validation",
+      "Evaluate against SPEC.md + official docs — not AI memory",
     ],
-    prompt: `We're building @SPEC.MD.
+    prompt: `We're building @SPEC.md.
 Please evaluate the existing codebase to check
 whether auth and database access are implemented
-correctly (in line with expectations in SPEC.MD
-and official documentation).
-Use Context7 MCP to look up docs.
+correctly per SPEC.md and official documentation.
+Use Context7 MCP to look up current docs.
 
-# After completing a feature:
-"Please update @SPEC.MD to reflect
-the changes we just made."`,
-    promptLabel: "Iterative development prompt",
-  },
-  {
-    num: 7,
-    title: "Install Skills",
-    icon: "⚡",
-    color: "#e879f9",
-    desc: "Add skill files that teach your AI best practices for specific technologies — DO/DON'T rules, code patterns, and real examples it reads automatically.",
-    details: [
-      "Skills are SKILL.md files with structured rules",
-      "AI reads them automatically on every prompt",
-      "Include DO/DON'T rules, tables, code examples",
-      "Install via: npx personal-ai-skills → select skills",
-    ],
-    prompt: `# .claude/skills/modern-react/SKILL.md
----
-name: Modern React
-description: React best practices and patterns
----
+# After completing a feature, keep SPEC.md current:
+"Please update @SPEC.md to reflect
+the auth feature we just built."
 
-## Rules
-- ✅ DO: Use functional components + hooks
-- ✅ DO: Keep components small and focused
-- ❌ DON'T: Use class components for new code
-
-## When to Use Each Hook
-| Hook        | Use Case                   |
-| ----------- | -------------------------- |
-| useState    | Local component state      |
-| useMemo     | Expensive calculations     |
-| useCallback | Stable function references |`,
-    promptLabel: "Example SKILL.md",
+# Reference a specific page spec when working on it:
+"We're building the billing page per
+@docs/spec/billing/SPEC.md."`,
+    promptLabel: "Iterative development prompts",
   },
   {
     num: 8,
     title: "Create Custom Commands",
     icon: "⌘",
     color: "#fbbf24",
-    desc: "Save prompts you use repeatedly as reusable command files. Use $ARGUMENTS for dynamic input — invoke with a shortcut instead of re-typing.",
+    desc: "Save prompts you type repeatedly as reusable command files. Use $ARGUMENTS for dynamic input — invoke with a slash shortcut instead of re-typing the full prompt every time.",
     details: [
-      "Commands are prompt templates saved as .md files",
-      "Use $ARGUMENTS to pass dynamic values",
-      "Invoke with: /command-name ARGS",
+      "Commands are prompt templates saved as .md files in .ai/commands/ or .claude/commands/",
+      "Use $ARGUMENTS to pass dynamic values like mode, scope, or a filename",
+      "Invoke with: /command-name ARGS  (e.g. /code-review SECURITY)",
       "Modes can be combined: /code-review BUGS, SECURITY",
     ],
-    prompt: `# .claude/commands/code-review.md
+    prompt: `# .ai/commands/code-review.md
 ---
 allowed-tools: Read (*)
-description: Perform a code review
+description: Perform a targeted code review
 ---
 Mode: $ARGUMENTS
 
-If Mode is one of the following,
-adjust the review accordingly:
-- BUGS → Focus on logical bugs
-- SECURITY → Focus on security issues
-- PERFORMANCE → Focus on performance
+Adjust the review based on Mode:
+- BUGS       → Focus on logical bugs only
+- SECURITY   → Focus on security issues only
+- PERFORMANCE→ Focus on performance only
 
 Modes can be combined: "BUGS, SECURITY"
-If empty → full general review.
+If Mode is empty → full general review.
 
-Perform an in-depth code review.
-Explore file-by-file. Create a report.`,
+Perform an in-depth review of the codebase.
+Explore file-by-file. Create a detailed report.
+
+# Usage examples:
+# /code-review BUGS
+# /code-review SECURITY
+# /code-review BUGS, PERFORMANCE
+# /code-review`,
     promptLabel: "Example command file",
   },
 ];
@@ -245,25 +260,25 @@ const conceptCards = [
   {
     icon: "🏗️",
     title: "Three-Tier Config",
-    desc: "Global ~/.ai/ (identity, ~50 tokens) → Project .ai/ (skills, rules) → Specs docs/spec/ (page-by-page). Load only what's relevant.",
+    desc: "Global ~/.ai/ (identity, ~50 tokens) → Project .ai/ (skills, rules, agents) → Specs docs/spec/ (feature-by-feature). Load only what's relevant to the current task.",
     color: "#8b5cf6",
   },
   {
     icon: "🗺️",
     title: "Map Pattern",
-    desc: "CLAUDE.md is a tiny index — under 200 tokens always-load. AI fetches specific skill/spec files only when the task matches.",
+    desc: "CLAUDE.md is a tiny index — under 200 tokens always-load. It tells the AI where files live. The AI fetches specific skill or spec files only when the task matches.",
     color: "#34d399",
   },
   {
     icon: "🔌",
     title: "MCP Tools",
-    desc: "Context7 and other MCPs give AI access to real, up-to-date documentation — no more hallucinated APIs.",
+    desc: "Context7 and other MCPs give AI access to real, live documentation — no more hallucinated APIs or outdated function signatures.",
     color: "#fb923c",
   },
   {
     icon: "🧠",
-    title: "Integrations",
-    desc: "Obsidian as second brain, claude-mem for session memory, graphify for large codebases — all wired via .ai/integrations/.",
+    title: "Memory Stack",
+    desc: "Obsidian as persistent second brain, claude-mem for session-to-session memory (~10x token savings), graphify for large codebase exploration (71x token reduction).",
     color: "#f472b6",
   },
 ];
@@ -274,9 +289,9 @@ const aiConfigFiles: {
   icon: React.ReactNode;
   note?: string;
 }[] = [
-  { assistant: "Claude Code", file: "CLAUDE.md", icon: <ClaudeIcon />, note: "map pattern" },
-  { assistant: "GitHub Copilot", file: "AGENTS.md", icon: <CopilotIcon /> },
-  { assistant: "VS Code", file: ".vscode/settings.json", icon: <CopilotIcon />, note: "JSON merge" },
+  { assistant: "Claude Code", file: "CLAUDE.md", icon: <ClaudeIcon />, note: "map pattern — < 200 tokens always-load" },
+  { assistant: "GitHub Copilot", file: "AGENTS.md + .github/copilot-instructions.md", icon: <CopilotIcon /> },
+  { assistant: "VS Code", file: ".vscode/settings.json", icon: <CopilotIcon />, note: "JSON merge — never overwrites existing keys" },
   { assistant: "Cursor", file: ".cursor/rules/", icon: <CursorIcon /> },
   { assistant: "Windsurf", file: ".windsurfrules", icon: <WindsurfIcon /> },
   { assistant: "Gemini CLI", file: "GEMINI.md", icon: <GeminiIcon /> },
@@ -297,9 +312,9 @@ export function GuidePage() {
           <span className={styles.heroAccent}>AI Assistants</span>
         </h1>
         <p className={styles.heroSub}>
-          Good input = good results. This guide shows you the exact workflow to
-          set up any project for AI-assisted development — from creating a spec
-          to building with subagents.
+          Good input = good results. This guide shows the exact workflow to set
+          up any project for AI-assisted development — from scaffolding a spec
+          to building with subagents and persistent memory.
         </p>
       </section>
 
@@ -311,7 +326,7 @@ export function GuidePage() {
         >
           <span className={styles.eqIcon}>📝</span>
           <span className={styles.eqLabel}>Specific Instructions</span>
-          <span className={styles.eqSub}>SPEC.MD + AI Config</span>
+          <span className={styles.eqSub}>SPEC.md + Skills + Rules</span>
         </div>
         <span className={styles.eqPlus}>+</span>
         <div
@@ -320,7 +335,7 @@ export function GuidePage() {
         >
           <span className={styles.eqIcon}>📚</span>
           <span className={styles.eqLabel}>Relevant Context</span>
-          <span className={styles.eqSub}>MCP Tools + Subagents</span>
+          <span className={styles.eqSub}>MCP Tools + Memory Stack</span>
         </div>
         <span className={styles.eqEquals}>=</span>
         <div
@@ -410,7 +425,7 @@ export function GuidePage() {
           Each AI assistant reads a different config file.{" "}
           <strong>personal-ai-skills bridge</strong> generates all of these
           interactively — choose which editors to target. The VS Code bridge
-          merges into existing settings rather than overwriting.
+          merges Copilot keys into existing settings rather than overwriting.
         </p>
         <div className={styles.configTable}>
           <div className={styles.configHeader}>
@@ -423,7 +438,12 @@ export function GuidePage() {
                 <span className={styles.configIcon}>{c.icon}</span>
                 {c.assistant}
               </span>
-              <code className={styles.configFile}>{c.file}</code>
+              <span className={styles.configFileGroup}>
+                <code className={styles.configFile}>{c.file}</code>
+                {c.note && (
+                  <span className={styles.configNote}>{c.note}</span>
+                )}
+              </span>
             </div>
           ))}
         </div>
@@ -449,20 +469,20 @@ export function GuidePage() {
             A Skill is a markdown file (<code>SKILL.md</code>) with structured
             rules, patterns, and code examples for a specific topic. When
             installed, your AI reads it automatically and applies those best
-            practices to every response.
+            practices to every response — without you re-typing the rules.
           </p>
           <div className={styles.skillStructure}>
             <div className={styles.skillStructureTitle}>
-              Skill folder structure
+              Skill folder structure (installed to .ai/skills/)
             </div>
             <div className={styles.skillTree}>
               <div className={styles.skillTreeItem}>
                 <span className={styles.skillTreeIcon}>📄</span>
                 <span className={styles.skillTreeMain}>SKILL.md</span>
-                <span className={styles.skillTreeLabel}>← Core skill file</span>
+                <span className={styles.skillTreeLabel}>← Core skill file (required)</span>
               </div>
               <div className={styles.skillTreeItem}>
-                <span className={styles.skillTreeIcon}>📁</span>
+                <span className={styles.skillTreeIcon}>📄</span>
                 <span className={styles.skillTreeText}>
                   [+ extra .md documents]
                 </span>
@@ -476,12 +496,8 @@ export function GuidePage() {
               <div className={styles.skillTreeItem}>
                 <span className={styles.skillTreeIcon}>📁</span>
                 <span className={styles.skillTreeText}>
-                  [+ scripts/ folder]
+                  [+ examples/ folder]
                 </span>
-              </div>
-              <div className={styles.skillTreeItem}>
-                <span className={styles.skillTreeIcon}>📁</span>
-                <span className={styles.skillTreeText}>[+ assets/ folder]</span>
               </div>
             </div>
           </div>
@@ -490,7 +506,7 @@ export function GuidePage() {
         <div className={styles.deepDiveExample}>
           <div className={styles.deepDiveExampleLabel}>
             <span>Example — </span>
-            <code>.claude/skills/modern-react/SKILL.md</code>
+            <code>.ai/skills/modern-react/SKILL.md</code>
           </div>
           <div className={styles.codeBlock}>
             <span className={styles.codeLabel}>
@@ -498,8 +514,11 @@ export function GuidePage() {
             </span>
             <pre className={styles.codePre}>
               <code>{`---
-name: Modern React
-description: React best practices and patterns
+name: modern-react
+description: React best practices. Use when writing
+  React components, hooks, or state management code.
+category: frontend
+tags: [react, typescript, hooks]
 ---
 
 # Skill: Modern React
@@ -507,35 +526,33 @@ description: React best practices and patterns
 Write clean, performant React components
 following modern best practices.
 
-## Component Structure
-
-### Rules
+## Rules
 - ✅ DO: Use functional components with hooks
 - ✅ DO: Keep components small and focused
 - ❌ DON'T: Use class components for new code
-- ❌ DON'T: Create god components
+- ❌ DON'T: Put multiple concerns in one component
 
-### When to Use Each Hook
+## When to Use Each Hook
 | Hook          | Use Case                    |
 | ------------- | --------------------------- |
 | useState      | Local component state       |
-| useReducer    | Complex state logic         |
+| useReducer    | Complex state with actions  |
 | useMemo       | Expensive calculations      |
 | useCallback   | Stable function references  |
-| useEffect     | External synchronization    |
+| useEffect     | Syncing with external system|
 
-## Avoid useEffect Abuse
+## Avoid useEffect for Derived State
 
-// ❌ Bad - derived state in useEffect
+// ❌ Bad — useEffect for something computable
 const [filtered, setFiltered] = useState([]);
 useEffect(() => {
-  setFiltered(items.filter(i => i.name.includes(q)));
-}, [items, q]);
+  setFiltered(items.filter(i => i.active));
+}, [items]);
 
-// ✅ Good - calculate during render
+// ✅ Good — calculate during render
 const filtered = useMemo(
-  () => items.filter(i => i.name.includes(q)),
-  [items, q]
+  () => items.filter(i => i.active),
+  [items]
 );`}</code>
             </pre>
           </div>
@@ -597,42 +614,39 @@ const filtered = useMemo(
         <div className={styles.deepDiveWhat}>
           <h3 className={styles.deepDiveWhatTitle}>What is a Command?</h3>
           <p className={styles.deepDiveWhatDesc}>
-            A Command is a prompt template saved as a markdown file. Instead of
-            re-typing "review my code for bugs and security issues" every time,
-            you create a command and invoke it with a shortcut. Use{" "}
-            <code>$ARGUMENTS</code> to pass dynamic values like mode or scope.
+            A Command is a prompt template saved as a markdown file in{" "}
+            <code>.ai/commands/</code> or <code>.claude/commands/</code>.
+            Instead of re-typing "review my code for security issues" every
+            session, you create a command and invoke it with a slash shortcut.
+            Use <code>$ARGUMENTS</code> to pass a mode, filename, or any
+            dynamic value.
           </p>
         </div>
 
         <div className={styles.deepDiveExample}>
           <div className={styles.deepDiveExampleLabel}>
             <span>Example — </span>
-            <code>.claude/commands/code-review.md</code>
+            <code>.ai/commands/code-review.md</code>
           </div>
           <div className={styles.codeBlock}>
             <span className={styles.codeLabel}>Code Review Command</span>
             <pre className={styles.codePre}>
               <code>{`---
 allowed-tools: Read (*)
-description: Perform a code review
+description: Perform a targeted code review
 ---
 Mode: $ARGUMENTS
 
-If Mode is one of the following,
-adjust the review accordingly:
-- BUGS: Focus ONLY on logical bugs
-- SECURITY: Focus ONLY on security issues
-- PERFORMANCE: Focus ONLY on performance
+Adjust the review based on Mode:
+- BUGS        → Focus only on logical bugs
+- SECURITY    → Focus only on security issues
+- PERFORMANCE → Focus only on performance
 
 Mode can be combined: "BUGS, SECURITY"
 If Mode is empty → full general review.
 
 Perform an in-depth code review of
-the entire codebase.
-
-Carefully explore file-by-file to find
-potential issues and improvements.
-
+the entire codebase. Explore file-by-file.
 Create a detailed report of all findings.`}</code>
             </pre>
           </div>
@@ -659,7 +673,7 @@ Create a detailed report of all findings.`}</code>
                 <code className={styles.commandUsageCode}>
                   /code-review BUGS, PERFORMANCE
                 </code>
-                <span className={styles.commandUsageDesc}>Combined review</span>
+                <span className={styles.commandUsageDesc}>Combined modes</span>
               </div>
               <div className={styles.commandUsageItem}>
                 <code className={styles.commandUsageCode}>/code-review</code>
@@ -677,13 +691,11 @@ Create a detailed report of all findings.`}</code>
         <div className={styles.deepDiveHeader}>
           <span className={styles.deepDiveIcon}>🧠</span>
           <div>
-            <h2 className={styles.deepDiveTitle}>
-              The 3-Tool Memory Stack
-            </h2>
+            <h2 className={styles.deepDiveTitle}>The 3-Tool Memory Stack</h2>
             <p className={styles.deepDiveSub}>
               Three tools, zero overlap — each solving a different memory
-              problem. Install once, get continuous AI context across every
-              session and project.
+              problem. Install once, and your AI carries context across every
+              session and project automatically.
             </p>
           </div>
         </div>
@@ -698,9 +710,9 @@ Create a detailed report of all findings.`}</code>
             <h3 className={styles.conceptTitle}>claude-obsidian</h3>
             <p className={styles.conceptDesc}>
               Your persistent second brain. Drop any file into{" "}
-              <code>.raw/</code> — Claude extracts concepts, entities, and
-              cross-links into an Obsidian wiki. <code>hot.md</code> is the
-              session cache, auto-loaded every conversation.
+              <code>.raw/</code> — Claude extracts concepts, entities, and links
+              into an Obsidian wiki. <code>wiki/hot.md</code> is the session
+              cache, auto-loaded at the start of every conversation.
             </p>
             <div
               style={{
@@ -720,8 +732,8 @@ Create a detailed report of all findings.`}</code>
             <h3 className={styles.conceptTitle}>claude-mem</h3>
             <p className={styles.conceptDesc}>
               Auto-captures your session activity, compresses it into semantic
-              summaries, and injects relevant context into the next session.
-              ~10x token savings. Zero manual work after{" "}
+              summaries, and injects relevant context at the start of the next
+              session. ~10x token savings. Zero manual work after{" "}
               <code>npx claude-mem install</code>.
             </p>
             <div
@@ -743,7 +755,8 @@ Create a detailed report of all findings.`}</code>
             <p className={styles.conceptDesc}>
               Turns any folder (code, docs, PDFs, videos) into a queryable
               knowledge graph. 71x fewer tokens per query vs reading raw files.
-              Run <code>/graphify .</code> when starting a new large codebase.
+              Run <code>/graphify .</code> when you start working on a large
+              unfamiliar codebase.
             </p>
             <div
               style={{
@@ -752,7 +765,7 @@ Create a detailed report of all findings.`}</code>
                 color: "rgba(255,255,255,0.4)",
               }}
             >
-              On-demand · big codebases & research
+              On-demand · large codebases & research
             </div>
           </div>
         </div>
@@ -760,39 +773,40 @@ Create a detailed report of all findings.`}</code>
         {/* Vault structure */}
         <div className={styles.deepDiveWhat}>
           <h3 className={styles.deepDiveWhatTitle}>
-            Your second brain structure
+            Your second brain — one vault, forever
           </h3>
           <p className={styles.deepDiveWhatDesc}>
-            One Obsidian vault, forever. Drop any source file into{" "}
-            <code>.raw/</code> and claude-obsidian organizes everything into{" "}
-            <code>wiki/</code>. Each project gets its own subfolder.
+            Drop any source file into <code>.raw/</code> and claude-obsidian
+            organizes everything into <code>wiki/</code>. Every project gets its
+            own subfolder. <code>hot.md</code> is the always-loaded session
+            cache — it holds the most recent context across all projects.
           </p>
           <div className={styles.codeBlock} style={{ marginTop: "1rem" }}>
-            <span className={styles.codeLabel}>~/ai-brain/ structure</span>
+            <span className={styles.codeLabel}>~/ai-brain/ vault structure</span>
             <pre className={styles.codePre}>
-              <code>{`~/ai-brain/                         ← your Obsidian vault (one, forever)
-├── .raw/                           ← drop ANY file here
+              <code>{`~/ai-brain/                         ← your Obsidian vault
+├── .raw/                           ← drop ANY file here (PDFs, docs, videos)
 │   ├── papers/
 │   ├── docs/
-│   └── videos/
+│   └── screenshots/
 │
-├── wiki/                           ← claude-obsidian auto-manages
+├── wiki/                           ← claude-obsidian auto-manages all of this
 │   ├── hot.md                      ← session cache (auto-loaded every chat)
-│   ├── index.md                    ← master catalog
-│   ├── concepts/                   ← extracted ideas
+│   ├── index.md                    ← master catalog of everything
+│   ├── concepts/                   ← ideas extracted from .raw/ files
 │   ├── entities/                   ← people, tools, companies
 │   ├── projects/
 │   │   ├── my-saas/
-│   │   │   ├── index.md
-│   │   │   ├── architecture.md
-│   │   │   └── decisions.md
+│   │   │   ├── index.md            ← project overview
+│   │   │   ├── architecture.md     ← key decisions
+│   │   │   └── sessions.md         ← recent session notes
 │   │   └── personal-ai-skills/
-│   └── sources/                    ← ingested from .raw/
+│   └── sources/                    ← processed versions of .raw/ files
 │
-└── graphify-out/                   ← optional, on-demand
-    └── GRAPH_REPORT.md
+└── graphify-out/                   ← on-demand knowledge graph output
+    └── GRAPH_REPORT.md             ← read this before grepping large repos
 
-~/.claude-mem/                      ← separate, auto-managed by claude-mem`}</code>
+~/.claude-mem/                      ← separate dir, auto-managed by claude-mem`}</code>
             </pre>
           </div>
         </div>
@@ -800,27 +814,28 @@ Create a detailed report of all findings.`}</code>
         {/* Install + integration templates */}
         <div className={styles.deepDiveExample}>
           <div className={styles.deepDiveExampleLabel}>
-            <span>Setup — install the memory stack + integration templates</span>
+            <span>Setup — install the memory stack (one-time per machine)</span>
           </div>
           <div className={styles.codeBlock}>
             <span className={styles.codeLabel}>One-time setup</span>
             <pre className={styles.codePre}>
-              <code>{`# 1. Clone your Obsidian vault (claude-obsidian pattern)
+              <code>{`# 1. Clone the Obsidian vault template (claude-obsidian pattern)
 git clone https://github.com/AgriciDaniel/claude-obsidian ~/ai-brain
 
-# 2. Install session memory (runs automatically from now on)
+# 2. Install session memory — runs automatically from now on
 npx claude-mem install
 
-# 3. Install graphify (optional, for large codebases)
+# 3. Install graphify (optional — for large codebases and research)
 pip install graphifyy && graphify install
 
 # 4. Install integration guide files into your project
-npx personal-ai-skills add obsidian        # .ai/integrations/obsidian.md
-npx personal-ai-skills add claude-mem      # .ai/integrations/claude-mem.md
-npx personal-ai-skills add graphify        # .ai/integrations/graphify.md
+#    These teach the AI HOW to use each tool (when to load hot.md, MCP order, etc.)
+npx personal-ai-skills add obsidian --type integration
+npx personal-ai-skills add claude-mem --type integration
+npx personal-ai-skills add graphify --type integration
 
-# Integration templates are in templates/integrations/ — they tell the AI
-# how to use each tool (when to load hot.md, MCP tool order, etc.)`}</code>
+# Or use the interactive wizard — select "Integrations" from the menu:
+npx personal-ai-skills`}</code>
             </pre>
           </div>
           <div className={styles.deepDiveBenefits}>
@@ -828,7 +843,7 @@ npx personal-ai-skills add graphify        # .ai/integrations/graphify.md
               className={styles.benefitChip}
               style={{ background: "rgba(139,92,246,0.12)", color: "#a78bfa" }}
             >
-              Persistent across projects
+              Persists across all projects
             </span>
             <span
               className={styles.benefitChip}
@@ -840,13 +855,13 @@ npx personal-ai-skills add graphify        # .ai/integrations/graphify.md
               className={styles.benefitChip}
               style={{ background: "rgba(52,211,153,0.12)", color: "#34d399" }}
             >
-              ~10x token savings
+              ~10x token savings (claude-mem)
             </span>
             <span
               className={styles.benefitChip}
               style={{ background: "rgba(251,146,60,0.12)", color: "#fb923c" }}
             >
-              Plain Markdown — AI can read it all
+              71x token reduction (graphify)
             </span>
           </div>
         </div>
@@ -858,34 +873,36 @@ npx personal-ai-skills add graphify        # .ai/integrations/graphify.md
         <div className={styles.rulesGrid}>
           <div className={styles.ruleCard}>
             <span className={styles.ruleNum}>01</span>
-            <h3 className={styles.ruleTitle}>Always reference @SPEC.MD</h3>
+            <h3 className={styles.ruleTitle}>Always reference @SPEC.md</h3>
             <p className={styles.ruleDesc}>
-              Start every major prompt with "We're building @SPEC.MD" so the AI
-              has full context. Never assume it remembers.
+              Start every major session with "We're building @SPEC.md" so the
+              AI has full project context. Never assume it remembers from before.
             </p>
           </div>
           <div className={styles.ruleCard}>
             <span className={styles.ruleNum}>02</span>
-            <h3 className={styles.ruleTitle}>Keep SPEC.MD updated</h3>
+            <h3 className={styles.ruleTitle}>Keep SPEC.md updated</h3>
             <p className={styles.ruleDesc}>
               After every feature or architecture change, ask the AI to update
-              SPEC.MD. It's your living documentation.
+              SPEC.md. It's your living documentation — stale specs produce
+              stale code.
             </p>
           </div>
           <div className={styles.ruleCard}>
             <span className={styles.ruleNum}>03</span>
-            <h3 className={styles.ruleTitle}>Use docs, not memory</h3>
+            <h3 className={styles.ruleTitle}>Use real docs, not AI memory</h3>
             <p className={styles.ruleDesc}>
-              Always tell the AI to look up official docs via MCP or web search.
-              AI knowledge can be outdated — real docs aren't.
+              Always tell the AI to look up library docs via Context7 MCP or
+              web search. AI training data goes stale — official docs don't.
             </p>
           </div>
           <div className={styles.ruleCard}>
             <span className={styles.ruleNum}>04</span>
             <h3 className={styles.ruleTitle}>Create once, reuse always</h3>
             <p className={styles.ruleDesc}>
-              Put repeated instructions (build commands, coding style, doc
-              lookup) in your AI config file so you never re-type them.
+              Put any repeated instruction (coding style, doc lookup rules,
+              build steps) in a skill or command file. You should never type
+              the same thing to your AI twice.
             </p>
           </div>
         </div>
@@ -895,9 +912,9 @@ npx personal-ai-skills add graphify        # .ai/integrations/graphify.md
       <section className={styles.cta}>
         <h2 className={styles.ctaTitle}>Automate the setup</h2>
         <p className={styles.ctaSub}>
-          <strong>personal-ai-skills</strong> installs skills, agents, rules &
-          prompts, scaffolds your three-tier spec, and generates token-efficient
-          bridge files for every AI tool you use.
+          <strong>personal-ai-skills</strong> installs skills, agents, rules,
+          prompts, and integrations — scaffolds your three-tier spec, and
+          generates token-efficient bridge files for every AI tool you use.
         </p>
         <div className={styles.ctaCode}>
           <code>npx personal-ai-skills</code>

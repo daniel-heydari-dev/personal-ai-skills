@@ -323,6 +323,11 @@
   align-items: center;
   justify-content: center;
 }
+.configFileGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
 .configFile {
   font-size: 0.82rem;
   color: #a78bfa;
@@ -331,6 +336,11 @@
   border-radius: 6px;
   width: fit-content;
   font-family: "SF Mono", "Fira Code", monospace;
+}
+.configNote {
+  font-size: 0.72rem;
+  color: rgba(148, 163, 184, 0.6);
+  padding-left: 0.1rem;
 }
 .rulesSection {
   margin-bottom: 4rem;

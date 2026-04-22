@@ -60,6 +60,11 @@ export async function selectContentTypes(): Promise<ContentType[] | symbol> {
         label: "Prompts",
         hint: "Pre-built prompt templates",
       },
+      {
+        value: "integration" as ContentType,
+        label: "Integrations",
+        hint: "Obsidian, claude-mem, graphify — memory & knowledge tools",
+      },
     ],
     required: true,
   });
@@ -98,6 +103,11 @@ export async function selectContentType(): Promise<ContentType | symbol> {
         value: "prompts" as ContentType,
         label: "Prompts",
         hint: "Pre-built prompt templates",
+      },
+      {
+        value: "integration" as ContentType,
+        label: "Integrations",
+        hint: "Obsidian, claude-mem, graphify",
       },
     ],
   });
