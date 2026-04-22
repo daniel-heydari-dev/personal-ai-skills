@@ -672,6 +672,186 @@ Create a detailed report of all findings.`}</code>
         </div>
       </section>
 
+      {/* Memory Stack */}
+      <section className={styles.deepDive}>
+        <div className={styles.deepDiveHeader}>
+          <span className={styles.deepDiveIcon}>🧠</span>
+          <div>
+            <h2 className={styles.deepDiveTitle}>
+              The 3-Tool Memory Stack
+            </h2>
+            <p className={styles.deepDiveSub}>
+              Three tools, zero overlap — each solving a different memory
+              problem. Install once, get continuous AI context across every
+              session and project.
+            </p>
+          </div>
+        </div>
+
+        {/* Tool cards */}
+        <div className={styles.conceptGrid} style={{ marginBottom: "2rem" }}>
+          <div
+            className={styles.conceptCard}
+            style={{ "--card-accent": "#8b5cf6" } as React.CSSProperties}
+          >
+            <span className={styles.conceptIcon}>🧠</span>
+            <h3 className={styles.conceptTitle}>claude-obsidian</h3>
+            <p className={styles.conceptDesc}>
+              Your persistent second brain. Drop any file into{" "}
+              <code>.raw/</code> — Claude extracts concepts, entities, and
+              cross-links into an Obsidian wiki. <code>hot.md</code> is the
+              session cache, auto-loaded every conversation.
+            </p>
+            <div
+              style={{
+                marginTop: "0.75rem",
+                fontSize: "0.75rem",
+                color: "rgba(255,255,255,0.4)",
+              }}
+            >
+              Always-on · long-term knowledge
+            </div>
+          </div>
+          <div
+            className={styles.conceptCard}
+            style={{ "--card-accent": "#22d3ee" } as React.CSSProperties}
+          >
+            <span className={styles.conceptIcon}>💾</span>
+            <h3 className={styles.conceptTitle}>claude-mem</h3>
+            <p className={styles.conceptDesc}>
+              Auto-captures your session activity, compresses it into semantic
+              summaries, and injects relevant context into the next session.
+              ~10x token savings. Zero manual work after{" "}
+              <code>npx claude-mem install</code>.
+            </p>
+            <div
+              style={{
+                marginTop: "0.75rem",
+                fontSize: "0.75rem",
+                color: "rgba(255,255,255,0.4)",
+              }}
+            >
+              Always-on · session-to-session memory
+            </div>
+          </div>
+          <div
+            className={styles.conceptCard}
+            style={{ "--card-accent": "#34d399" } as React.CSSProperties}
+          >
+            <span className={styles.conceptIcon}>📊</span>
+            <h3 className={styles.conceptTitle}>graphify</h3>
+            <p className={styles.conceptDesc}>
+              Turns any folder (code, docs, PDFs, videos) into a queryable
+              knowledge graph. 71x fewer tokens per query vs reading raw files.
+              Run <code>/graphify .</code> when starting a new large codebase.
+            </p>
+            <div
+              style={{
+                marginTop: "0.75rem",
+                fontSize: "0.75rem",
+                color: "rgba(255,255,255,0.4)",
+              }}
+            >
+              On-demand · big codebases & research
+            </div>
+          </div>
+        </div>
+
+        {/* Vault structure */}
+        <div className={styles.deepDiveWhat}>
+          <h3 className={styles.deepDiveWhatTitle}>
+            Your second brain structure
+          </h3>
+          <p className={styles.deepDiveWhatDesc}>
+            One Obsidian vault, forever. Drop any source file into{" "}
+            <code>.raw/</code> and claude-obsidian organizes everything into{" "}
+            <code>wiki/</code>. Each project gets its own subfolder.
+          </p>
+          <div className={styles.codeBlock} style={{ marginTop: "1rem" }}>
+            <span className={styles.codeLabel}>~/ai-brain/ structure</span>
+            <pre className={styles.codePre}>
+              <code>{`~/ai-brain/                         ← your Obsidian vault (one, forever)
+├── .raw/                           ← drop ANY file here
+│   ├── papers/
+│   ├── docs/
+│   └── videos/
+│
+├── wiki/                           ← claude-obsidian auto-manages
+│   ├── hot.md                      ← session cache (auto-loaded every chat)
+│   ├── index.md                    ← master catalog
+│   ├── concepts/                   ← extracted ideas
+│   ├── entities/                   ← people, tools, companies
+│   ├── projects/
+│   │   ├── my-saas/
+│   │   │   ├── index.md
+│   │   │   ├── architecture.md
+│   │   │   └── decisions.md
+│   │   └── personal-ai-skills/
+│   └── sources/                    ← ingested from .raw/
+│
+└── graphify-out/                   ← optional, on-demand
+    └── GRAPH_REPORT.md
+
+~/.claude-mem/                      ← separate, auto-managed by claude-mem`}</code>
+            </pre>
+          </div>
+        </div>
+
+        {/* Install + integration templates */}
+        <div className={styles.deepDiveExample}>
+          <div className={styles.deepDiveExampleLabel}>
+            <span>Setup — install the memory stack + integration templates</span>
+          </div>
+          <div className={styles.codeBlock}>
+            <span className={styles.codeLabel}>One-time setup</span>
+            <pre className={styles.codePre}>
+              <code>{`# 1. Clone your Obsidian vault (claude-obsidian pattern)
+git clone https://github.com/AgriciDaniel/claude-obsidian ~/ai-brain
+
+# 2. Install session memory (runs automatically from now on)
+npx claude-mem install
+
+# 3. Install graphify (optional, for large codebases)
+pip install graphifyy && graphify install
+
+# 4. Install integration guide files into your project
+npx personal-ai-skills add obsidian        # .ai/integrations/obsidian.md
+npx personal-ai-skills add claude-mem      # .ai/integrations/claude-mem.md
+npx personal-ai-skills add graphify        # .ai/integrations/graphify.md
+
+# Integration templates are in templates/integrations/ — they tell the AI
+# how to use each tool (when to load hot.md, MCP tool order, etc.)`}</code>
+            </pre>
+          </div>
+          <div className={styles.deepDiveBenefits}>
+            <span
+              className={styles.benefitChip}
+              style={{ background: "rgba(139,92,246,0.12)", color: "#a78bfa" }}
+            >
+              Persistent across projects
+            </span>
+            <span
+              className={styles.benefitChip}
+              style={{ background: "rgba(34,211,238,0.12)", color: "#22d3ee" }}
+            >
+              Zero manual work
+            </span>
+            <span
+              className={styles.benefitChip}
+              style={{ background: "rgba(52,211,153,0.12)", color: "#34d399" }}
+            >
+              ~10x token savings
+            </span>
+            <span
+              className={styles.benefitChip}
+              style={{ background: "rgba(251,146,60,0.12)", color: "#fb923c" }}
+            >
+              Plain Markdown — AI can read it all
+            </span>
+          </div>
+        </div>
+      </section>
+
       {/* Key rules */}
       <section className={styles.rulesSection}>
         <h2 className={styles.sectionTitle}>Golden Rules</h2>
