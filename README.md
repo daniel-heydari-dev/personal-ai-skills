@@ -1,196 +1,367 @@
 # personal-ai-skills
 
-> Universal AI skills installer — one command to teach any AI assistant best practices.
+> **One config, every AI assistant, minimal tokens.** The universal AI instruction system — skills, agents, rules, and specs that work across Claude Code, Cursor, VS Code, GitHub Copilot, Codex, Gemini, and Windsurf, integrated with Obsidian as your second brain.
 
 [![npm version](https://img.shields.io/npm/v/personal-ai-skills.svg)](https://www.npmjs.com/package/personal-ai-skills)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
-## What is personal-ai-skills?
+## 🎯 The Problem
 
-A CLI that installs coding guidelines, rules, agent personas, and prompt templates into **any project** — and every AI assistant you use reads them automatically.
+You use **multiple AI coding assistants**: Claude Code, Cursor, VS Code Copilot, Codex, Gemini, maybe Windsurf. Every assistant reads its own config file in its own format. You end up:
 
-**The problem:** You use Claude, Copilot, Cursor, Gemini, and more. Each reads its own config directory. Keeping instructions in sync across editors is painful.
+- Copy-pasting the same rules into `CLAUDE.md`, `.cursor/rules`, `AGENTS.md`, `GEMINI.md`, `.vscode/settings.json`…
+- Burning **thousands of tokens per message** because every rule loads every time
+- Losing context between sessions — the AI forgets what you did yesterday
+- Juggling Obsidian notes, `.md` docs, and AI configs separately
+- Repeating the entire project context on every single project
 
-**The solution:** `personal-ai-skills` installs everything into a single `.ai/` directory and generates bridge context files (`CLAUDE.md`, `.cursorrules`, etc.) that tell each editor: _"Read `.ai/` for all instructions."_
-
-```
-your-project/
-├── .ai/                          ← single source of truth
-│   ├── skills/clean-code/
-│   ├── skills/modern-react/
-│   ├── rules/typescript-strict/
-│   ├── agents/code-reviewer/
-│   └── .skill-lock.json
-├── CLAUDE.md                     ← bridge: "read .ai/"
-├── GEMINI.md                     ← bridge: "read .ai/"
-├── AGENTS.md                     ← bridge: "read .ai/"
-└── .cursor/rules/ai-config.mdc   ← bridge: "read .ai/"
-```
-
-No duplication. Switch editors freely. Commit `.ai/` to git — your whole team gets the same AI behavior.
-
-### Compatible with skills.sh
-
-Designed to work with the [skills.sh](https://skills.sh) ecosystem by [Vercel Labs](https://github.com/vercel-labs/skills). Skills created for either tool work in both.
+There has to be a better way. **There is.**
 
 ---
 
-## Quick Start
+## 💡 The Solution — Three Principles
+
+### 1. CLAUDE.md is a MAP, not a Loader
+
+Most people dump every rule into `CLAUDE.md`. That burns tokens on every message.
+
+Instead, `CLAUDE.md` should be a **tiny index** that tells the AI **where** things live. The AI only loads specific files **when the topic is relevant**.
+
+```
+❌ Old way: 6,000 tokens loaded every message
+✅ New way: 200 tokens always + load-on-demand = ~700 tokens average
+```
+
+### 2. Three Tiers of Config
+
+```
+┌──────────────────────────────────────────┐
+│  GLOBAL   ~/.ai/                         │   ← tiny, identity + integrations
+│  • always.md (50 tokens)                 │
+│  • integrations/ (obsidian, mem, graph)  │
+├──────────────────────────────────────────┤
+│  PROJECT  project/.ai/                   │   ← project-specific skills/rules
+│  • skills/  agents/  rules/  commands/   │
+│  • .skill-lock.json                      │
+├──────────────────────────────────────────┤
+│  SPECS    project/docs/spec/             │   ← hierarchical, page-by-page
+│  • SPEC.md (root, always load)           │
+│  • auth/SPEC.md      (load on demand)    │
+│  • inventory/SPEC.md (load on demand)    │
+└──────────────────────────────────────────┘
+```
+
+### 3. Obsidian for Humans, `.ai/` for AI
+
+- **Obsidian vault** = your human-readable second brain (you read, edit, browse)
+- **`.ai/` folders** = AI-readable instructions (AI reads, never browses)
+- They sync via [claude-obsidian](https://github.com/AgriciDaniel/claude-obsidian) with a `.raw/` folder for source docs and a `wiki/` folder for AI-managed notes
+- **[claude-mem](https://github.com/thedotmack/claude-mem)** automatically captures session activity and injects relevant context into future sessions
+- **[graphify](https://github.com/safishamsi/graphify)** (optional) turns large codebases into queryable knowledge graphs with 71x token reduction
+
+---
+
+## 🗂️ The Complete Architecture
+
+```
+~/                                  ← your home directory
+├── .ai/                            ← GLOBAL config (laptop-wide)
+│   ├── always.md                   ← ≤200 tokens, loads every message
+│   └── integrations/
+│       ├── obsidian.md             ← Obsidian vault path + structure
+│       ├── claude-mem.md           ← session memory config
+│       └── graphify.md             ← knowledge graph config (optional)
+│
+├── ai-brain/                       ← OBSIDIAN VAULT (your second brain)
+│   ├── .raw/                       ← drop PDFs, docs, videos, screenshots
+│   ├── wiki/                       ← auto-managed by claude-obsidian
+│   │   ├── hot.md                  ← session cache (auto-loaded)
+│   │   ├── index.md                ← master catalog
+│   │   ├── concepts/               ← extracted ideas
+│   │   ├── entities/               ← people, tools, companies
+│   │   ├── projects/               ← YOUR PROJECTS INDEX HERE
+│   │   │   ├── saas-inventory/
+│   │   │   └── personal-ai-skills/
+│   │   └── sources/                ← ingested from .raw/
+│   └── .obsidian/
+│
+└── projects/
+    └── my-saas-app/                ← PROJECT-LEVEL config
+        ├── SPEC.md                 ← root spec, always load (~150 tokens)
+        ├── CLAUDE.md               ← MAP (where things are)
+        ├── AGENTS.md               ← (Copilot/Codex bridge)
+        ├── .cursor/rules           ← (Cursor bridge)
+        ├── .vscode/settings.json   ← (VS Code bridge, merged)
+        ├── GEMINI.md               ← (Gemini bridge)
+        ├── .windsurfrules          ← (Windsurf bridge)
+        │
+        ├── .ai/                    ← project skills/rules
+        │   ├── skills/
+        │   ├── agents/
+        │   ├── rules/
+        │   ├── commands/
+        │   └── .skill-lock.json
+        │
+        └── docs/
+            └── spec/               ← HIERARCHICAL SPECS
+                ├── auth/SPEC.md    ← load when working on auth
+                ├── inventory/SPEC.md
+                └── billing/SPEC.md
+```
+
+---
+
+## 🚀 Quick Start
+
+### 1. Install Globally (one-time setup)
 
 ```bash
-# Run directly (no install needed)
-npx personal-ai-skills
-
-# Or install globally
+# Install the CLI globally
 npm install -g personal-ai-skills
 
-# Or with pnpm
-pnpm add -g personal-ai-skills
+# Create your global ~/.ai/ config
+personal-ai-skills init --global
+
+# Install the memory stack
+npx claude-mem install                              # session memory
+git clone https://github.com/AgriciDaniel/claude-obsidian ~/ai-brain
+cd ~/ai-brain && bash bin/setup-vault.sh            # Obsidian vault
+pip install graphifyy && graphify install           # optional graph layer
 ```
 
-The interactive wizard:
-
-1. **Multi-select categories** — Skills, Agents, Commands, Rules, Prompts (pick one or all)
-2. **Pick specific items** — checkboxes for each category
-3. **Auto-detects** your AI assistants
-4. **Installs to `.ai/`** + generates bridge files
-
-That's it. Your AI assistants now follow the guidelines.
-
----
-
-## How It Works
-
-### Architecture
-
-```
-┌───────────────────────────────────────────────────────┐
-│  .ai/                    ← all content lives here     │
-│  ├── skills/clean-code/                               │
-│  ├── skills/modern-react/                             │
-│  ├── rules/typescript-strict/                         │
-│  ├── agents/code-reviewer/                            │
-│  └── .skill-lock.json   ← tracks what's installed    │
-├───────────────────────────────────────────────────────┤
-│  Bridge context files    ← auto-generated             │
-│  ├── CLAUDE.md           → tells Claude: read .ai/    │
-│  ├── GEMINI.md           → tells Gemini: read .ai/    │
-│  ├── AGENTS.md           → tells Copilot/Codex/Amp    │
-│  ├── .cursor/rules/      → tells Cursor: read .ai/    │
-│  └── .windsurfrules      → tells Windsurf: read .ai/  │
-└───────────────────────────────────────────────────────┘
-```
-
-1. **`.ai/` is the single source of truth.** All content (skills, rules, agents, commands, prompts) lives here.
-2. **Bridge files** are tiny context files for each editor. They just say "read `.ai/` for instructions." Auto-generated, never overwrite existing ones.
-3. **Lock file** (`.ai/.skill-lock.json`) tracks installed items, versions, and sources.
-4. **No editor-specific directories.** No `.claude/skills/`, no `.cursor/skills/`, no duplication.
-
-### How AI Assistants Use Your Skills
-
-Once installed, your AI assistants **automatically** pick up the guidelines:
-
-- **Claude Code** reads `CLAUDE.md` → discovers `.ai/skills/` → follows the rules
-- **Cursor** reads `.cursor/rules/ai-config.mdc` → discovers `.ai/skills/` → applies them
-- **GitHub Copilot** reads `AGENTS.md` + `.github/copilot-instructions.md` → same result
-- **Gemini CLI** reads `GEMINI.md` → applies `.ai/` content
-- **Windsurf** reads `.windsurfrules` → applies `.ai/` content
-
-You don't need to configure anything extra. Just open your editor, start coding, and the AI follows the guidelines.
-
-### Example: After Installing "clean-code"
-
-You run `npx personal-ai-skills add clean-code` in your project. Now when you ask Claude or Copilot to write a function, they'll automatically:
-
-- Use meaningful variable names (no `x`, `temp`, `data`)
-- Keep functions small (< 20 lines)
-- Follow DRY principles
-- Add proper error handling
-
-Because `.ai/skills/clean-code/SKILL.md` tells them to.
-
----
-
-## Usage
-
-### Interactive Mode
+### 2. Per-Project Setup (30 seconds)
 
 ```bash
+cd my-project
 personal-ai-skills
+
+# Interactive wizard asks:
+# 1. Which categories? (skills, agents, rules, commands, prompts)
+# 2. Which specific items? (multi-select)
+# 3. Which AI assistants should get bridge files? (NEW!)
+#    ◯ Claude Code       ◯ Cursor        ◯ VS Code
+#    ◯ GitHub Copilot    ◯ Codex         ◯ Gemini
+#    ◯ Windsurf          ◉ All of above  ◯ None
+# 4. Create SPEC.md? (Y/n)
+
+# Done!
 ```
 
-Multi-select categories → pick items → confirm → done.
-
-### Direct Install
+### 3. Daily Use — Add a Feature
 
 ```bash
-# Install a single skill
-personal-ai-skills add clean-code
+# Create a spec for a new feature area
+personal-ai-skills init spec auth
 
-# Install multiple items
+# Now when you open your AI assistant:
+# - Always loads: SPEC.md (150 tokens) + always.md (50 tokens)
+# - You say "working on auth"
+# - AI auto-loads docs/spec/auth/SPEC.md (200 tokens)
+# - Total context: ~400 tokens instead of 6,000
+```
+
+---
+
+## 📊 Token Budget — Why This Matters
+
+Every token you load costs money AND slows down responses. Here's the math:
+
+| Approach                       | Tokens/message | Cost per 1M msgs |
+| ------------------------------ | -------------- | ---------------- |
+| ❌ Dump all rules in CLAUDE.md | ~6,000         | $$$$             |
+| 🟡 Per-project skills only     | ~500           | $$               |
+| ✅ Map pattern + smart loading | ~700           | $                |
+| 🏆 + prompt caching (Claude)   | ~70 effective  | ¢                |
+
+**10x–85x cost savings** just from using the map pattern instead of bulk loading.
+
+---
+
+## 🧠 The Memory Stack (3 tools, zero overlap)
+
+Your "second brain" is **three tools working together** — they solve different problems:
+
+### 1. claude-obsidian — Your Knowledge Base
+
+**What:** Persistent Obsidian vault that auto-organizes everything you read.
+
+**Why:** You drop PDFs, articles, screenshots, videos into `.raw/`. Claude extracts concepts, entities, cross-references, and files them into `wiki/`. The graph view shows how everything connects.
+
+**When:** Always-on. This is your long-term knowledge.
+
+```bash
+/wiki           # bootstrap or continue
+ingest [file]   # read a source, create wiki pages
+/save           # save current conversation as a wiki note
+/autoresearch   # autonomous 3-round web research
+```
+
+### 2. claude-mem — Your Session Memory
+
+**What:** Captures everything you did in a Claude Code session, compresses it, injects relevant bits into future sessions.
+
+**Why:** Stop explaining your project context at the start of every conversation. The AI picks up where you left off.
+
+**When:** Always-on. Zero manual work.
+
+```bash
+# install once, forget about it
+npx claude-mem install
+```
+
+### 3. graphify — Your Code/Docs Graph (optional)
+
+**What:** Turns any folder (code, docs, papers, images, video) into a queryable knowledge graph. 71x fewer tokens per query vs reading raw files.
+
+**Why:** On large codebases or research corpora, even the map pattern isn't enough. The graph gives the AI a structural overview before it searches.
+
+**When:** On-demand. Run `/graphify .` when starting a new codebase exploration.
+
+```bash
+/graphify .                    # build graph
+/graphify query "auth flow?"   # query the graph
+/graphify --obsidian           # export to Obsidian
+```
+
+---
+
+## 📖 Deep Dive: Why Each Piece Exists
+
+### Why `CLAUDE.md` as a Map (not a Loader)?
+
+When an AI assistant opens a project, it reads `CLAUDE.md` **every single message**. If you put 50 rules there, you pay for 50 rules × number of messages.
+
+Instead, `CLAUDE.md` should tell the AI:
+
+> "Your rules live in `.ai/rules/`. Your skills live in `.ai/skills/`. Your project spec is `SPEC.md`. Load each of these **only when relevant**."
+
+The AI is smart enough to follow this. It will read `.ai/skills/modern-react/SKILL.md` when you edit a `.tsx` file, and skip it when you edit a `.py` file. You save tokens on every message.
+
+### Why Hierarchical `SPEC.md`?
+
+A real SaaS app has 10+ feature areas (auth, billing, dashboard, settings, reports, admin, API, webhooks, notifications, search...). If you dump ALL of them in one spec, the AI loads 5,000 tokens of irrelevant context when you're working on billing.
+
+**Hierarchical specs solve this:**
+
+- Root `SPEC.md` = 150 tokens, always loaded (what the app IS)
+- `docs/spec/billing/SPEC.md` = 200 tokens, loaded only when working on billing
+
+The AI navigates by the root spec's **spec map**, which is a simple table of "topic → file path".
+
+### Why Three Tiers (Global / Project / Specs)?
+
+- **Global** = your identity, never changes (50 tokens always)
+- **Project** = what this codebase is (150 tokens always)
+- **Specs** = what this feature is (200 tokens on demand)
+
+Each tier has a different lifecycle and a different loading strategy. Mixing them means you either lose per-project nuance (too global) or repeat yourself constantly (too local).
+
+### Why Make Bridges Optional?
+
+Not everyone uses every tool. If you only use Claude Code + Cursor, you don't want `GEMINI.md` and `.windsurfrules` cluttering your repo. The interactive prompt lets you pick exactly which bridges to generate.
+
+### Why Obsidian Instead of Just More `.md` Files?
+
+`.md` files are fine for AI. But YOU need to:
+
+- Search your notes
+- See how concepts connect (graph view)
+- Embed images, PDFs, videos
+- Version-control your knowledge
+
+Obsidian gives you all of that **while remaining plain Markdown**, so the AI can still read everything. The `claude-obsidian` pattern adds auto-organization so your vault doesn't become a dump of random files.
+
+### Why claude-mem for Session Memory?
+
+Even with perfect config, the AI forgets conversations. You solved a tricky bug yesterday — today the AI has no idea. claude-mem captures the tool calls, generates summaries, and injects the relevant ones when you start a new session. It's the memory layer that makes everything else feel continuous.
+
+### Why graphify is Optional?
+
+For small projects (< 20 files), you don't need a graph — the AI can just read files directly. For large codebases (50+ files), grep is slow and burns tokens. graphify precomputes a structural map so the AI navigates by architecture instead of file search.
+
+---
+
+## 🎓 The Commands You'll Actually Use
+
+### Project Setup
+
+```bash
+# Interactive install (new project)
+personal-ai-skills
+
+# Install specific items
 personal-ai-skills add clean-code modern-react
 
-# Install from GitHub
-personal-ai-skills add user/repo
+# Pick bridges explicitly
+personal-ai-skills add clean-code --bridges claude,cursor,vscode
+personal-ai-skills add clean-code --bridges all
+personal-ai-skills add clean-code --bridges none    # skills only, no bridges
 
-# Install from a local directory
-personal-ai-skills add ./my-custom-skill
-
-# Install everything at once
+# Install everything, non-interactive (for CI)
 personal-ai-skills add --all --yes
 ```
 
-### Other Commands
+### SPEC Management
 
 ```bash
-# List available content
+# Create root SPEC.md
+personal-ai-skills init spec
+
+# Create page-level specs (auto-updates root map)
+personal-ai-skills init spec auth
+personal-ai-skills init spec inventory
+personal-ai-skills init spec billing
+```
+
+### Skills Management
+
+```bash
+# List what's available and what's installed
 personal-ai-skills list
-personal-ai-skills list skills
 personal-ai-skills list --installed
 
-# Search the catalog
+# Search
 personal-ai-skills search react
-
-# Remove installed content
-personal-ai-skills remove clean-code
-
-# Generate bridge files manually
-personal-ai-skills bridge
-
-# Create a new skill template
-personal-ai-skills init skills my-skill
 
 # Update installed items
 personal-ai-skills update
 
-# Launch web viewer
-personal-ai-skills serve
+# Remove items
+personal-ai-skills remove clean-code
 ```
 
-### Options
-
-| Option                | Description                                                      |
-| --------------------- | ---------------------------------------------------------------- |
-| `-y`, `--yes`         | Skip confirmation prompts                                        |
-| `--all`               | Install all items                                                |
-| `-g`, `--global`      | Install to home directory (`~/.ai/`)                             |
-| `-a`, `--agent <ids>` | Target specific assistants for bridge files                      |
-| `-t`, `--type <type>` | Content type: `skills`, `agents`, `commands`, `rules`, `prompts` |
-| `-v`, `--version`     | Show version                                                     |
-| `-h`, `--help`        | Show help                                                        |
-
-### CI/CD Usage
+### Bridge Management
 
 ```bash
-# Non-interactive install for pipelines
-npx personal-ai-skills add --all --yes
+# Regenerate bridges (after adding/removing skills)
+personal-ai-skills bridge
+
+# Regenerate only specific bridges
+personal-ai-skills bridge --bridges vscode,claude
+```
+
+### Global Config
+
+```bash
+# Install to ~/.ai/ (personal defaults for all projects)
+personal-ai-skills add clean-typescript -g
+
+# Sync global config from your GitHub repo
+personal-ai-skills sync
+```
+
+### Web Viewer
+
+```bash
+# Browse the catalog with interactive UI
+personal-ai-skills serve
 ```
 
 ---
 
-## Content Catalog
+## 🛠️ Content Catalog
 
 ### Skills (18)
 
@@ -232,326 +403,217 @@ Specialized AI personas with deep expertise.
 | `docs-explorer`         | Documentation navigation and explanation      |
 | `migration-helper`      | Framework/library migration guidance          |
 
-### Commands (8)
+### Rules (6), Commands (8), Prompts (5)
 
-Quick-access templates for common tasks.
-
-| Command          | Description                                  |
-| ---------------- | -------------------------------------------- |
-| `code-review`    | Review code quality and suggest improvements |
-| `explain`        | Explain code or concepts clearly             |
-| `generate-tests` | Create comprehensive test suites             |
-| `refactor`       | Improve code structure and readability       |
-| `document`       | Generate documentation and comments          |
-| `optimize`       | Performance optimization suggestions         |
-| `fix-tests`      | Debug and fix failing tests                  |
-| `scaffold`       | Generate boilerplate and project structure   |
-
-### Rules (6)
-
-Hard constraints your AI must always follow.
-
-| Rule                     | Description                       |
-| ------------------------ | --------------------------------- |
-| `typescript-strict`      | Strict TypeScript type-safety     |
-| `react-patterns`         | Modern React conventions          |
-| `accessibility-required` | WCAG 2.1 AA compliance            |
-| `error-boundaries`       | Error boundary patterns for React |
-| `import-order`           | Consistent import ordering        |
-| `no-console`             | No console.log in production      |
-
-### Prompts (5)
-
-Templates for structured output.
-
-| Prompt           | Description                          |
-| ---------------- | ------------------------------------ |
-| `pr-description` | Structured pull request descriptions |
-| `commit-message` | Conventional commit message format   |
-| `release-notes`  | User-facing changelog generation     |
-| `bug-report`     | Structured bug report template       |
-| `feature-spec`   | Feature specification document       |
+See [full catalog](https://personal-ai-skills.dev/explore) in the web viewer.
 
 ---
 
-## Supported AI Assistants (18)
+## 🌉 Supported AI Assistants
 
-Auto-detected. All content goes to `.ai/` — bridge files handle the rest.
+| Assistant          | Bridge File                                     | Auto-generated | Format                 |
+| ------------------ | ----------------------------------------------- | -------------- | ---------------------- |
+| **Claude Code**    | `CLAUDE.md`                                     | ✅             | Markdown (map pattern) |
+| **Cursor**         | `.cursor/rules/ai-config.mdc`                   | ✅             | MDC with always-apply  |
+| **VS Code**        | `.vscode/settings.json`                         | ✅ (merged)    | JSON settings          |
+| **GitHub Copilot** | `AGENTS.md` + `.github/copilot-instructions.md` | ✅             | Markdown               |
+| **OpenAI Codex**   | `AGENTS.md`                                     | ✅             | Markdown               |
+| **Gemini CLI**     | `GEMINI.md`                                     | ✅             | Markdown               |
+| **Windsurf**       | `.windsurfrules`                                | ✅             | Plain text             |
 
-| Assistant      | Bridge File                                     | Detected By                                |
-| -------------- | ----------------------------------------------- | ------------------------------------------ |
-| Claude Code    | `CLAUDE.md`                                     | `~/.claude/` or `claude` CLI               |
-| GitHub Copilot | `AGENTS.md` + `.github/copilot-instructions.md` | `~/.config/github-copilot/`                |
-| Cursor         | `.cursor/rules/ai-config.mdc`                   | `~/.cursor/` or `/Applications/Cursor.app` |
-| Windsurf       | `.windsurfrules`                                | `~/.codeium/windsurf/`                     |
-| Gemini CLI     | `GEMINI.md`                                     | `~/.gemini/` or `gemini` CLI               |
-| Antigravity    | `GEMINI.md`                                     | `~/.gemini/antigravity/`                   |
-| Codex          | `AGENTS.md`                                     | `~/.codex/` or `codex` CLI                 |
-| Amp            | `AGENTS.md`                                     | `~/.config/amp/`                           |
-| Cline          | `AGENTS.md`                                     | `~/.cline/`                                |
-| Roo Code       | `AGENTS.md`                                     | `~/.roo/`                                  |
-| Continue       | `AGENTS.md`                                     | `~/.continue/`                             |
-| Goose          | `AGENTS.md`                                     | `~/.config/goose/`                         |
-| OpenCode       | `AGENTS.md`                                     | `~/.config/opencode/`                      |
-| Kiro           | `AGENTS.md`                                     | `~/.kiro/`                                 |
-| Trae           | `AGENTS.md`                                     | `~/.trae/`                                 |
-| Augment        | `AGENTS.md`                                     | `~/.augment/`                              |
-| Droid          | `AGENTS.md`                                     | `~/.factory/`                              |
-| Kilo Code      | `AGENTS.md`                                     | `~/.kilocode/`                             |
+All bridges are **optional** — pick the ones you actually use.
 
 ---
 
-## Creating Your Own Content
+## 🔌 Integrations
 
-### Skill File Format
-
-```
-my-skill/
-└── SKILL.md
-```
-
-```markdown
----
-name: my-skill
-description: What this skill teaches
-category: coding
-tags: [typescript, patterns]
----
-
-# My Skill
-
-## Context
-
-When to apply this skill.
-
-## Instructions
-
-Guidelines the AI must follow.
-
-## Examples
-
-Concrete code examples.
-
-## Anti-patterns
-
-What NOT to do.
-```
-
-### Other Content Types
-
-| Type    | File Name    | Template Dir                 |
-| ------- | ------------ | ---------------------------- |
-| Skill   | `SKILL.md`   | `templates/skills/<name>/`   |
-| Agent   | `AGENT.md`   | `templates/agents/<name>/`   |
-| Command | `COMMAND.md` | `templates/commands/<name>/` |
-| Rule    | `RULE.md`    | `templates/rules/<name>/`    |
-| Prompt  | `PROMPT.md`  | `templates/prompts/<name>/`  |
-
-Or use the init command:
+### [claude-obsidian](https://github.com/AgriciDaniel/claude-obsidian) — Your Second Brain
 
 ```bash
-personal-ai-skills init skills my-skill
-personal-ai-skills init agents my-agent
+git clone https://github.com/AgriciDaniel/claude-obsidian ~/ai-brain
+cd ~/ai-brain && bash bin/setup-vault.sh
 ```
 
-### Sharing via GitHub
+Your global vault at `~/ai-brain/` becomes the shared knowledge base for every project.
 
-Publish your skill as a repo and anyone can install it:
+### [claude-mem](https://github.com/thedotmack/claude-mem) — Session Memory
 
 ```bash
-personal-ai-skills add your-username/your-skill-repo
+npx claude-mem install
+```
+
+Automatic session-to-session memory. Zero config needed.
+
+### [graphify](https://github.com/safishamsi/graphify) — Knowledge Graphs
+
+```bash
+pip install graphifyy
+graphify install         # Claude Code
+graphify cursor install  # Cursor
+graphify gemini install  # Gemini CLI
+```
+
+On-demand knowledge graph for large codebases.
+
+---
+
+## 📚 Example: A Full Project Setup
+
+Here's what a production SaaS project looks like with everything configured:
+
+```bash
+# Start a new project
+npx create-next-app my-saas
+cd my-saas
+
+# Install AI config
+personal-ai-skills
+# ✓ Install: clean-typescript, modern-nextjs, api-design, testing-best-practices
+# ✓ Bridges: Claude Code, Cursor, VS Code (I don't use Copilot)
+# ✓ Create SPEC.md: Yes
+
+# Create feature specs
+personal-ai-skills init spec auth
+personal-ai-skills init spec billing
+personal-ai-skills init spec dashboard
+
+# Link to Obsidian
+echo "obsidian_project: ~/ai-brain/wiki/projects/my-saas/" >> .ai/config
+
+# Done. Your project has:
+# ✓ SPEC.md (root, always load)
+# ✓ docs/spec/{auth,billing,dashboard}/SPEC.md
+# ✓ .ai/ with 4 skills + rules
+# ✓ CLAUDE.md, .cursor/rules, .vscode/settings.json (the bridges I use)
+# ✓ Obsidian vault linked for long-term notes
+# ✓ claude-mem auto-remembers sessions
+```
+
+Open Claude Code:
+
+```
+You: "Let's add 2FA to the auth system"
+
+Claude auto-loads:
+  ✓ always.md              (50 tokens — global identity)
+  ✓ SPEC.md                (150 tokens — what the app is)
+  ✓ docs/spec/auth/SPEC.md (200 tokens — auth-specific)
+  ✓ .ai/skills/modern-nextjs  (300 tokens — React/Next patterns)
+  ✓ claude-mem context     (auto-injected — what you did yesterday)
+
+Total: ~800 tokens instead of 8,000
+Cost: ~$0.002 instead of $0.024
 ```
 
 ---
 
-## Publishing to npm
-
-To publish `personal-ai-skills` so anyone can use it with `npx personal-ai-skills`:
-
-```bash
-# 1. Login to npm
-npm login
-
-# 2. Make sure tests pass and it builds
-pnpm test && pnpm build
-
-# 3. Publish
-npm publish
-
-# 4. Users can now run:
-npx personal-ai-skills
-```
-
-### Scoped Package (Optional)
-
-If `personal-ai-skills` is taken on npm, publish under a scope:
-
-```bash
-# In package.json: change "name" to "@your-scope/personal-ai-skills"
-npm publish --access public
-
-# Users run:
-npx @your-scope/personal-ai-skills
-```
-
----
-
-## Development
-
-```bash
-# Clone and install
-git clone https://github.com/daniel-heydari-dev/personal-ai-skills.git
-cd personal-ai-skills
-pnpm install
-
-# Dev (runs TypeScript directly)
-pnpm dev
-
-# Build
-pnpm build
-
-# Test
-pnpm test
-
-# Type-check
-pnpm typecheck
-
-# Web viewer dev mode
-cd web
-pnpm install
-pnpm dev
-```
-
-### Web Viewer
-
-Browse the full catalog with an interactive web UI featuring animated space backgrounds, smooth transitions, and live search.
-
-```bash
-# Launch the web viewer
-personal-ai-skills serve
-
-# Or develop locally
-cd web
-pnpm install
-pnpm dev
-```
-
-#### Web Viewer Features
-
-- Animated canvas space background with twinkling stars and shooting stars
-- Smooth page transitions with staggered fade-in animations
-- Animated stat counters with eased count-up effects
-- Floating nebula orbs with parallax-style drift
-- Gradient glow borders on hover with shimmer effects
-- **Explore page** — deep-dive into all 45 templates with What/Why/How explanations, before/after code comparisons, and highlight grids
-- **Guide page** — interactive workflow timeline, AI config table with official brand SVG icons, concept cards, golden rules, and step-by-step setup instructions
-- Package manager tabs (pnpm / npm / yarn) for install commands
-- Responsive design — works on mobile and desktop
-- Live search across all skills, agents, commands, rules, and prompts
-
-### Project Structure
+## 🏗️ Project Structure
 
 ```
 personal-ai-skills/
 ├── src/
-│   ├── cli.ts          # CLI entry point, command routing
-│   ├── types.ts        # Central type definitions
-│   ├── agents.ts       # 18 AI assistant registry (detection, paths)
-│   ├── catalog.ts      # Content catalog (loads templates)
-│   ├── install.ts      # Installation to .ai/ directory
-│   ├── lock.ts         # Lock file (.ai/.skill-lock.json)
-│   ├── bridge.ts       # Bridge context file generation
-│   ├── prompts.ts      # Interactive CLI prompts (@clack/prompts)
-│   └── github.ts       # GitHub/URL/local source fetching
+│   ├── cli.ts              # CLI entry point
+│   ├── types.ts            # Central types
+│   ├── agents.ts           # AI assistant registry
+│   ├── catalog.ts          # Template loading
+│   ├── install.ts          # Install to .ai/
+│   ├── lock.ts             # .skill-lock.json management
+│   ├── bridge.ts           # Bridge file generation (all assistants)
+│   ├── prompts.ts          # Interactive CLI (@clack/prompts)
+│   ├── github.ts           # GitHub/URL/local source fetching
+│   └── spec.ts             # SPEC.md scaffolding (NEW)
 ├── templates/
-│   ├── skills/         # 18 built-in skills
-│   ├── agents/         # 8 specialized agents
-│   ├── commands/       # 8 command templates
-│   ├── rules/          # 6 coding rules
-│   ├── prompts/        # 5 prompt templates
-│   ├── stacks/         # Stack configs (go, node, python, rust)
-│   ├── shared/         # Shared AGENTS.md + AI_SETUP.md templates
-│   ├── claude/         # Claude bridge template
-│   ├── copilot/        # Copilot bridge template
-│   └── gemini/         # Gemini bridge template
-├── web/                # React web viewer (Vite + React 19)
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── Layout.tsx           # App shell with nav
-│   │   │   ├── SpaceBackground.tsx  # Animated canvas background
-│   │   │   ├── SkillCard.tsx        # Skill card with hover effects
-│   │   │   └── BrandIcons.tsx       # Official AI brand SVG icons
-│   │   ├── pages/
-│   │   │   ├── HomePage.tsx         # Hero, stats, search, categories
-│   │   │   ├── ExplorePage.tsx      # Full catalog deep-dive with examples
-│   │   │   ├── GuidePage.tsx        # Interactive workflow guide
-│   │   │   ├── CategoryPage.tsx     # Category listing
-│   │   │   └── SkillPage.tsx        # Skill detail view
-│   │   └── data/
-│   │       └── catalog.ts           # Client-side catalog data
-│   └── package.json
-├── test/               # Vitest test suite (28 tests)
-└── package.json
+│   ├── skills/             # 18 built-in skills
+│   ├── agents/             # 8 specialized agents
+│   ├── commands/           # 8 command templates
+│   ├── rules/              # 6 coding rules
+│   ├── prompts/            # 5 prompt templates
+│   ├── stacks/             # Stack configs
+│   ├── shared/             # SPEC.root, SPEC.page, CLAUDE.md map (NEW)
+│   ├── global/             # always.md (NEW)
+│   └── integrations/       # obsidian, claude-mem, graphify (NEW)
+├── web/                    # React web viewer
+└── test/                   # Vitest test suite
 ```
-
-### Key Design Decisions
-
-| Decision                     | Rationale                                                 |
-| ---------------------------- | --------------------------------------------------------- |
-| `.ai/` as canonical dir      | Editor-agnostic, no duplication, one place for everything |
-| Bridge files over symlinks   | Works on all OS, no permission issues, human-readable     |
-| Auto-detect assistants       | Zero config — just run `personal-ai-skills/`              |
-| Never overwrite bridge files | User customizations are preserved                         |
-| Lock file in `.ai/`          | Tracks versions for updates, keeps everything together    |
 
 ---
 
-## FAQ
-
-### How do I know it's working?
-
-After installing, open your project in Claude Code, Cursor, or any supported editor. Ask the AI to write a function — it should follow the guidelines from your installed skills.
-
-You can also check the bridge files:
+## 🤝 Development
 
 ```bash
-cat CLAUDE.md      # Shows what Claude reads
-cat AGENTS.md      # Shows what Copilot/Codex reads
+git clone https://github.com/daniel-heydari-dev/personal-ai-skills.git
+cd personal-ai-skills
+pnpm install
+pnpm dev          # run CLI from source
+pnpm test         # run tests
+pnpm typecheck    # type-check
+pnpm build        # build for publish
+
+# Web viewer
+cd web && pnpm dev
 ```
 
-### What if I already have a CLAUDE.md?
+---
 
-Bridge files **never overwrite** existing files. If you already have `CLAUDE.md`, `personal-ai-skills` skips it. Add the `.ai/` reference manually:
+## 🧭 FAQ
 
-```markdown
-## AI Configuration
+### Why not just use Obsidian for everything?
 
-Read all files in `.ai/skills/` and `.ai/rules/` before writing code.
-```
+Obsidian is for **humans** — you read it, edit it, browse it. AI can read it too, but Obsidian's plugin system and UI are built for people. `.ai/` files are for **AI** — they're structured, versioned, and optimized for prompt engineering. Both coexist.
 
-### Can I install to multiple projects?
+### What if a skill and my SPEC conflict?
 
-Yes. `cd` into each project and run `personal-ai-skills`. Each project gets its own `.ai/` directory.
+SPEC wins. Skills are generic best practices. SPEC is project-specific reality. If your project uses class components on purpose, the SPEC overrides the `modern-react` skill.
 
-### What should I commit to git?
+### Do I need ALL three memory tools (claude-obsidian, claude-mem, graphify)?
+
+- **claude-mem**: Start here. Zero config, instant benefit.
+- **claude-obsidian**: Add when you want a long-term knowledge base.
+- **graphify**: Add only for large codebases (50+ files).
+
+### Can I use this without any bridges?
+
+Yes. `--bridges none` installs skills to `.ai/` without generating any bridge files. You can then manually reference `.ai/` in whatever AI tool you use.
+
+### How do I commit this to git?
 
 Commit everything:
 
-- `.ai/` — your skills, rules, agents, etc.
-- `CLAUDE.md`, `AGENTS.md`, `GEMINI.md` — bridge files
-- `.cursor/rules/ai-config.mdc` — Cursor bridge
+- `.ai/` — skills, rules, agents
+- `SPEC.md` + `docs/spec/` — project specs
+- Bridge files (`CLAUDE.md`, `AGENTS.md`, etc.) — team-wide consistency
 
-Your team gets the same AI behavior automatically.
+Do **NOT** commit:
+
+- `~/.ai/` — that's global, personal
+- `~/ai-brain/` — that's your personal Obsidian vault
+- `.claude-mem/` data — personal session history
 
 ### Project scope vs global?
 
-| Scope                 | Location               | When to Use                           |
-| --------------------- | ---------------------- | ------------------------------------- |
-| **Project** (default) | `.ai/` in project root | Team-shared, committed to git         |
-| **Global** (`-g`)     | `~/.ai/` in home dir   | Personal defaults across all projects |
+| Scope                 | Location          | When to use                           |
+| --------------------- | ----------------- | ------------------------------------- |
+| **Project** (default) | `.ai/` in project | Team-shared, committed to git         |
+| **Global** (`-g`)     | `~/.ai/` in home  | Personal defaults across all projects |
 
 ---
 
-## License
+## 📜 License
 
 MIT
+
+---
+
+## 🙏 Credits
+
+Built on the shoulders of:
+
+- [claude-obsidian](https://github.com/AgriciDaniel/claude-obsidian) by Agrici Daniel
+- [claude-mem](https://github.com/thedotmack/claude-mem) by Alex Newman
+- [graphify](https://github.com/safishamsi/graphify) by Safi Shamsi
+- [skills.sh](https://skills.sh) ecosystem by Vercel Labs
+- [Andrej Karpathy's LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)
+
+---
+
+**Made with ❤️ for developers who refuse to repeat themselves.**
