@@ -61,38 +61,61 @@ const VERSION = "1.0.0";
 const HELP = `
 personal-ai-skills - Universal AI skills installer
 
+Three-tier token-efficient config: global ~/.ai/ → project .ai/ → docs/spec/
+
 USAGE
   $ personal-ai-skills [command] [options]
 
 COMMANDS
-  add <source>      Install skills from GitHub, URL, or builtin catalog
-  remove <name>     Remove installed skills
-  list [type]       List available or installed items
-  search <query>    Search the catalog
-  bridge            Generate context files for detected editors
-  update            Update all installed items
-  init <type>       Create a new SKILL.md template
-  serve             Launch web viewer (localhost:3000)
+  add <source>          Install skills from GitHub, URL, or builtin catalog
+  remove <name>         Remove installed skills
+  list [type]           List available or installed items
+  search <query>        Search the catalog
+  bridge                Generate context files for selected editors
+  update                Update all installed items
+  init <type>           Create a new SKILL.md / AGENT.md / etc. template
+  init spec             Create root SPEC.md (three-tier architecture)
+  init spec <name>      Create docs/spec/<name>/SPEC.md + update Spec Map
+  serve                 Browse the catalog
 
 OPTIONS
-  -g, --global      Install to user directory (global)
-  -a, --agent       Target specific agents (comma-separated)
-  -t, --type        Content type: skills, agents, commands, rules, prompts
-  -y, --yes         Skip confirmation prompts
-  --all             Install all items to all agents
-  -v, --version     Show version
-  -h, --help        Show help
+  -g, --global          Install to user directory (global)
+  -a, --agent           Target specific agents (comma-separated)
+  -t, --type            Content type: skills, agents, commands, rules, prompts
+  -y, --yes             Skip confirmation prompts
+  --all                 Install all items to all agents
+  --bridges <ids>       Bridge files to generate: all | none | claude,cursor,...
+  -v, --version         Show version
+  -h, --help            Show help
+
+BRIDGE IDS
+  claude    CLAUDE.md (map pattern, < 200 tokens always-load)
+  cursor    .cursor/rules/ai-config.mdc
+  vscode    .vscode/settings.json  (merges — never overwrites)
+  copilot   .github/copilot-instructions.md
+  codex     AGENTS.md
+  gemini    GEMINI.md
+  windsurf  .windsurfrules
 
 EXAMPLES
-  $ personal-ai-skills add clean-code          # Install builtin skill
-  $ personal-ai-skills add user/repo           # Install from GitHub
-  $ personal-ai-skills add ./my-skill          # Install from local path
-  $ personal-ai-skills list                    # List all available items
-  $ personal-ai-skills list skills             # List available skills
-  $ personal-ai-skills list --installed        # List installed items
-  $ personal-ai-skills remove clean-code       # Remove a skill
-  $ personal-ai-skills bridge                  # Generate CLAUDE.md, .cursorrules, etc.
-  $ personal-ai-skills serve                   # Launch web viewer
+  $ personal-ai-skills add clean-code                   # Install builtin skill
+  $ personal-ai-skills add user/repo                    # Install from GitHub
+  $ personal-ai-skills add ./my-skill                   # Install from local path
+  $ personal-ai-skills list                             # List all available items
+  $ personal-ai-skills list skills                      # List available skills
+  $ personal-ai-skills list --installed                 # List installed items
+  $ personal-ai-skills remove clean-code                # Remove a skill
+  $ personal-ai-skills bridge                           # Interactive bridge selection
+  $ personal-ai-skills bridge --bridges claude,vscode   # Specific bridges only
+  $ personal-ai-skills bridge --bridges none            # Skip bridge generation
+  $ personal-ai-skills init spec                        # Create root SPEC.md
+  $ personal-ai-skills init spec auth                   # Create docs/spec/auth/SPEC.md
+  $ personal-ai-skills add clean-code --bridges all     # Install + generate all bridges
+
+INTEGRATIONS
+  Obsidian   templates/integrations/obsidian.md
+  claude-mem templates/integrations/claude-mem.md
+  graphify   templates/integrations/graphify.md
 
 SUPPORTED ASSISTANTS (20+)
   Claude Code, GitHub Copilot, Cursor, Windsurf, Gemini CLI,

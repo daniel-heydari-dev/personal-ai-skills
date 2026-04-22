@@ -12,31 +12,32 @@ import styles from "./GuidePage.module.css";
 const workflowSteps = [
   {
     num: 1,
-    title: "Create SPEC.MD",
+    title: "Create SPEC.md (three-tier)",
     icon: "📋",
     color: "#8b5cf6",
-    desc: "Document your entire project in one file — what it does, the tech stack, database, and all requirements.",
+    desc: "Scaffold your project spec with the three-tier architecture: global identity → project rules → page-level specs. Use init spec to generate the files.",
     details: [
-      "Create SPEC.MD in your project root",
-      "Describe: app name, purpose, features",
-      "List: tech stack, libraries, database",
-      "Add: API endpoints, data models, UI flows",
+      "npx personal-ai-skills init spec  →  creates root SPEC.md",
+      "npx personal-ai-skills init spec auth  →  creates docs/spec/auth/SPEC.md",
+      "Root SPEC.md auto-updates its Spec Map table",
+      "Goal: ~150 tokens loaded always, rest on demand",
     ],
-    prompt: `I'm building a "Note Taking" web app.
+    prompt: `# Three-tier config layout
+# ─────────────────────────────
+# GLOBAL   ~/.ai/           ← identity + integrations (~50 tokens)
+# PROJECT  .ai/             ← skills, rules, agents
+# SPECS    docs/spec/*/     ← page-by-page context
 
-Users will be able to create and manage notes
-via a rich text editor (TipTap).
+# 1. Scaffold root spec
+npx personal-ai-skills init spec
 
-Stack: React.js with pnpm & TypeScript
-Styling: TailwindCSS
-Auth: better-auth
-Database: SQLite (Bun built-in client)
+# 2. Add a feature spec (auto-updates SPEC.md table)
+npx personal-ai-skills init spec auth
+npx personal-ai-skills init spec billing
 
-Do you need more information to create me
-a technical specification document which I
-can use as a foundation to build this app?`,
-    promptLabel:
-      "Example prompt to Paste the prompt to ChatGPT / Claude and get a structured technical specification back",
+# Total always-load budget: ~700–1,100 tokens
+# (vs ~6,000 tokens with the old content-dump approach)`,
+    promptLabel: "init spec workflow",
   },
   {
     num: 2,
@@ -65,45 +66,38 @@ Include sections for:
   },
   {
     num: 3,
-    title: "Configure Your AI",
+    title: "Configure Your AI (map pattern)",
     icon: "⚙️",
     color: "#34d399",
-    desc: "Create CLAUDE.md (or equivalent) that tells your AI assistant how to work with your project. Point it to SPEC.MD.",
+    desc: "Generate bridge files for each AI tool. CLAUDE.md acts as a MAP — tiny index that tells the AI where files live, not what's in them. Under 200 tokens always-load.",
     details: [
-      "Create CLAUDE.md / AGENTS.md / .cursorrules",
-      "Reference SPEC.MD for project context",
-      "Add build commands & project structure",
-      "Set rules: concise replies, use docs, etc.",
+      "npx personal-ai-skills bridge  →  interactive bridge selection",
+      "--bridges claude,vscode  →  specific editors only",
+      "--bridges none  →  skip bridge generation",
+      "VS Code bridge merges into .vscode/settings.json (never overwrites)",
     ],
-    prompt: `# CLAUDE.md
+    prompt: `# Generated CLAUDE.md (map pattern, < 200 tokens)
+# ─────────────────────────────────────────────
 
-We're building the app described in @SPEC.MD.
-Read that file for architectural context.
+## ⚡ ALWAYS LOAD
+- Root spec: \`SPEC.md\`
+- Rules: \`.ai/rules/\` — always follow
 
-Keep replies extremely concise. No fluff.
-Always look up official docs before suggesting.
-Use the DocsExplorer subagent for doc lookup.
+## 🗺️ REFERENCE MAP (load only when relevant)
+- Skills: \`.ai/skills/\` — load by file type
+- Agents: \`.ai/agents/\` — load when role requested
+- Sub-specs: \`docs/spec/*/SPEC.md\` — load when relevant
+- Obsidian brain: \`~/ai-brain/wiki/hot.md\`
 
-Whenever working with any third-party library or something similar, you MUST look up the official documentation to ensure that you're working with up-to-date information.
-Use the DocsExplorer subagent for efficient documentation lookup.
-
-This file provides guidance to Claude Code (claude. ai/code) when working with code in this repository.
-
-## Commands
-\`\`\`bash
-pnpm dev       # Start dev server
-pnpm run build # Build for production
-pnpm run lint  # Run linter
-\`\`\`
-
-## Architecture
-React.js App Router with TypeScript strict mode.
-
-## Key Dependencies
-- @tiptap/* — Rich text editor
-- better-auth — Authentication
-- zod — Schema validation`,
-    promptLabel: "Example CLAUDE.md structure",
+# Interactive bridge selection
+npx personal-ai-skills bridge
+# ◯ Claude Code    (CLAUDE.md)
+# ◯ Cursor         (.cursor/rules)
+# ◯ VS Code        (.vscode/settings.json)
+# ◯ GitHub Copilot (AGENTS.md)
+# ◯ Gemini CLI     (GEMINI.md)
+# ◯ Windsurf       (.windsurfrules)`,
+    promptLabel: "Map-pattern bridge generation",
   },
   {
     num: 4,
@@ -249,15 +243,15 @@ Explore file-by-file. Create a report.`,
 
 const conceptCards = [
   {
-    icon: "📋",
-    title: "SPEC.MD",
-    desc: "Single source of truth for your entire project — what it is, how it works, and what to build next.",
+    icon: "🏗️",
+    title: "Three-Tier Config",
+    desc: "Global ~/.ai/ (identity, ~50 tokens) → Project .ai/ (skills, rules) → Specs docs/spec/ (page-by-page). Load only what's relevant.",
     color: "#8b5cf6",
   },
   {
-    icon: "⚙️",
-    title: "AI Config",
-    desc: "CLAUDE.md / AGENTS.md / .cursorrules — tells the AI how to behave, what commands to run, and where to look.",
+    icon: "🗺️",
+    title: "Map Pattern",
+    desc: "CLAUDE.md is a tiny index — under 200 tokens always-load. AI fetches specific skill/spec files only when the task matches.",
     color: "#34d399",
   },
   {
@@ -267,9 +261,9 @@ const conceptCards = [
     color: "#fb923c",
   },
   {
-    icon: "🤖",
-    title: "Subagents",
-    desc: "Specialized helpers for docs lookup, testing, review — run in parallel for speed.",
+    icon: "🧠",
+    title: "Integrations",
+    desc: "Obsidian as second brain, claude-mem for session memory, graphify for large codebases — all wired via .ai/integrations/.",
     color: "#f472b6",
   },
 ];
@@ -278,9 +272,11 @@ const aiConfigFiles: {
   assistant: string;
   file: string;
   icon: React.ReactNode;
+  note?: string;
 }[] = [
-  { assistant: "Claude Code", file: "CLAUDE.md", icon: <ClaudeIcon /> },
+  { assistant: "Claude Code", file: "CLAUDE.md", icon: <ClaudeIcon />, note: "map pattern" },
   { assistant: "GitHub Copilot", file: "AGENTS.md", icon: <CopilotIcon /> },
+  { assistant: "VS Code", file: ".vscode/settings.json", icon: <CopilotIcon />, note: "JSON merge" },
   { assistant: "Cursor", file: ".cursor/rules/", icon: <CursorIcon /> },
   { assistant: "Windsurf", file: ".windsurfrules", icon: <WindsurfIcon /> },
   { assistant: "Gemini CLI", file: "GEMINI.md", icon: <GeminiIcon /> },
@@ -412,8 +408,9 @@ export function GuidePage() {
         <h2 className={styles.sectionTitle}>AI Config Files by Assistant</h2>
         <p className={styles.configSub}>
           Each AI assistant reads a different config file.{" "}
-          <strong>personal-ai-skills</strong> generates all of these
-          automatically — but you can also create them manually.
+          <strong>personal-ai-skills bridge</strong> generates all of these
+          interactively — choose which editors to target. The VS Code bridge
+          merges into existing settings rather than overwriting.
         </p>
         <div className={styles.configTable}>
           <div className={styles.configHeader}>
@@ -719,10 +716,14 @@ Create a detailed report of all findings.`}</code>
         <h2 className={styles.ctaTitle}>Automate the setup</h2>
         <p className={styles.ctaSub}>
           <strong>personal-ai-skills</strong> installs skills, agents, rules &
-          prompts and generates all config files automatically.
+          prompts, scaffolds your three-tier spec, and generates token-efficient
+          bridge files for every AI tool you use.
         </p>
         <div className={styles.ctaCode}>
           <code>npx personal-ai-skills</code>
+        </div>
+        <div className={styles.ctaCode} style={{ marginTop: "0.5rem", opacity: 0.7 }}>
+          <code>npx personal-ai-skills init spec</code>
         </div>
         <div className={styles.ctaLinks}>
           <Link to="/explore" className={styles.ctaLink}>
