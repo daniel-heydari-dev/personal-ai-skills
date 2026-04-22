@@ -44,7 +44,7 @@ import {
   startSpinner,
 } from "./prompts.js";
 import { installItems, uninstallItem } from "./install.js";
-import { getInstalledItems, getInstalledItemsByType } from "./lock.js";
+import { getInstalledItems, getInstalledItemsByType, getPreferences, savePreferences } from "./lock.js";
 import { fetchSkillFromSource } from "./github.js";
 import {
   generateBridgeFiles,
@@ -306,8 +306,12 @@ async function cmdAdd(
   // No source: interactive mode
   if (!source) {
     const catalog = await loadCatalog();
-    const installOptions = await runInteractiveInstall(catalog);
+    const prefs = await getPreferences("global");
+    const installOptions = await runInteractiveInstall(catalog, prefs?.obsidianVaultPath);
     if (!installOptions) return;
+
+    // Save vault path preference for next run
+    await savePreferences({ obsidianVaultPath: installOptions.obsidianVaultPath }, "global");
 
     const spinner = startSpinner("Installing...");
     const result = await installItems(

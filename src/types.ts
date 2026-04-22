@@ -98,6 +98,7 @@ export interface LockFile {
     defaultAssistants?: string[];
     defaultScope?: InstallScope;
     defaultMethod?: InstallMethod;
+    obsidianVaultPath?: string;
   };
 }
 

@@ -137,29 +137,42 @@ pip install graphifyy && graphify install           # optional graph layer
 cd my-project
 personal-ai-skills
 
-# Interactive wizard asks:
-# 1. Which categories? (skills, agents, rules, commands, prompts)
-# 2. Which specific items? (multi-select)
-# 3. Which AI assistants should get bridge files? (NEW!)
-#    ◯ Claude Code       ◯ Cursor        ◯ VS Code
-#    ◯ GitHub Copilot    ◯ Codex         ◯ Gemini
-#    ◯ Windsurf          ◉ All of above  ◯ None
-# 4. Create SPEC.md? (Y/n)
+# Interactive wizard:
+# 1. Where is your Obsidian vault?   ~/ai-brain  (saved for next time)
+# 2. What to install?    Skills / Agents / Integrations / ...
+# 3. Which items?        multi-select from catalog
+# 4. Which AI editors?   Claude / Cursor / VS Code / Copilot / Gemini / Windsurf
+# 5. Scope?              project (this project) or global (~/.ai/)
 
-# Done!
+# Then scaffold your spec:
+personal-ai-skills init spec               # creates SPEC.md + CLAUDE.md
+personal-ai-skills init spec auth          # creates docs/spec/auth/SPEC.md
+personal-ai-skills init spec inventory     # creates docs/spec/inventory/SPEC.md
 ```
 
-### 3. Daily Use — Add a Feature
+### 3. How Claude Uses This — Token Breakdown
 
-```bash
-# Create a spec for a new feature area
-personal-ai-skills init spec auth
+Working on the inventory bulk-edit feature:
 
-# Now when you open your AI assistant:
-# - Always loads: SPEC.md (150 tokens) + always.md (50 tokens)
-# - You say "working on auth"
-# - AI auto-loads docs/spec/auth/SPEC.md (200 tokens)
-# - Total context: ~400 tokens instead of 6,000
+```text
+Step 1  CLAUDE.md auto-loads          ~80 tokens  (maps, not content)
+Step 2  SPEC.md always loads          ~150 tokens (what the app is)
+Step 3  You say: "working on inventory bulk edit"
+Step 4  Claude reads Spec Map → loads docs/spec/inventory/SPEC.md
+                                      ~200 tokens (only inventory context)
+                                     ─────────────────────────────────────
+                          Total:      ~430 tokens  ✅
+
+vs loading everything upfront:       ~6,000–8,000 tokens  ❌
+```
+
+The rule that makes this work:
+
+```text
+Root SPEC.md    → what the app IS           always,    ~150 tokens
+Page SPEC.md    → what this feature DOES    on demand, ~200 tokens
+.ai/ skills     → how to CODE it            by file type, ~300 tokens
+Obsidian        → why decisions were made   you paste, ~400 tokens
 ```
 
 ---

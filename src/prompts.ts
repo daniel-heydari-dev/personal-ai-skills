@@ -246,12 +246,37 @@ export async function confirmInstall(
 }
 
 /**
+ * Ask for the Obsidian vault path (used once, saved to preferences)
+ */
+export async function askObsidianVaultPath(
+  existingPath?: string,
+): Promise<string | symbol> {
+  return p.text({
+    message: "Where is your Obsidian vault (ai-brain)?",
+    placeholder: "~/ai-brain",
+    defaultValue: existingPath || "~/ai-brain",
+    validate(value) {
+      if (!value?.trim()) return "Path cannot be empty";
+    },
+  });
+}
+
+/**
  * Run full interactive install flow
  */
 export async function runInteractiveInstall(
   catalog: Map<ContentType, CatalogItem[]>,
-): Promise<InstallOptions | null> {
+  savedVaultPath?: string,
+): Promise<(InstallOptions & { obsidianVaultPath: string }) | null> {
   p.intro("🚀 personal-ai-skills installer");
+
+  // 0. Ask for Obsidian vault path (skip if already saved and user hasn't changed it)
+  const vaultPathResult = await askObsidianVaultPath(savedVaultPath);
+  if (p.isCancel(vaultPathResult)) {
+    p.cancel("Installation cancelled");
+    return null;
+  }
+  const obsidianVaultPath = (vaultPathResult as string).trim() || "~/ai-brain";
 
   // 1. Select content types (multi-select)
   const contentTypesResult = await selectContentTypes();
@@ -322,7 +347,7 @@ export async function runInteractiveInstall(
     return null;
   }
 
-  return options;
+  return { ...options, obsidianVaultPath };
 }
 
 /**

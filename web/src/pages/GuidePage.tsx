@@ -17,9 +17,9 @@ const workflowSteps = [
     color: "#8b5cf6",
     desc: "Scaffold your project spec with the three-tier architecture. The SPEC.md root file is always loaded (~150 tokens). Feature specs in docs/spec/*/ are loaded on demand — keeping your total always-load budget under 1,100 tokens.",
     details: [
-      "npx personal-ai-skills init spec  →  creates root SPEC.md with Spec Map",
+      "npx personal-ai-skills init spec  →  creates SPEC.md + CLAUDE.md ready to use",
       "npx personal-ai-skills init spec auth  →  creates docs/spec/auth/SPEC.md",
-      "Root SPEC.md Spec Map table is auto-updated with each new feature spec",
+      "Root SPEC.md Spec Map table auto-updates each time you add a sub-spec",
       "Three tiers: ~/.ai/ global identity · .ai/ project · docs/spec/ feature specs",
     ],
     prompt: `# Three-tier layout
@@ -77,23 +77,27 @@ Include sections for:
       "npx personal-ai-skills  →  interactive wizard (picks type, items, scope)",
       "npx personal-ai-skills add clean-code  →  install a specific skill directly",
     ],
-    prompt: `# Interactive wizard — covers skills, agents, integrations
+    prompt: `# Interactive wizard — first question is your Obsidian vault path
 npx personal-ai-skills
+# ? Where is your Obsidian vault (ai-brain)?  ~/ai-brain
+# ? What to install?  Skills / Agents / Integrations / ...
+# ? Which items?      (multi-select)
+# ? Which editors?    Claude / Cursor / VS Code / ...
 
 # Or install specific items directly:
 npx personal-ai-skills add clean-code
 npx personal-ai-skills add modern-react
 npx personal-ai-skills add testing-best-practices
 
-# Install memory stack integrations (one-time)
+# Install memory stack integrations (one-time — shows "Next step:" after each)
 npx personal-ai-skills add obsidian --type integration
-npx personal-ai-skills add claude-mem --type integration
-npx personal-ai-skills add graphify --type integration
+# Next step: git clone https://github.com/AgriciDaniel/claude-obsidian ~/ai-brain
 
-# Each integration shows a "Next step:" command after install:
-# obsidian  → git clone https://github.com/AgriciDaniel/claude-obsidian ~/ai-brain
-# claude-mem → npx claude-mem install
-# graphify  → pip install graphifyy && graphify install`,
+npx personal-ai-skills add claude-mem --type integration
+# Next step: npx claude-mem install
+
+npx personal-ai-skills add graphify --type integration
+# Next step: pip install graphifyy && graphify install`,
     promptLabel: "Install workflow",
   },
   {
@@ -363,6 +367,114 @@ export function GuidePage() {
               <p className={styles.conceptDesc}>{c.desc}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Architecture diagram */}
+      <section className={styles.deepDive}>
+        <div className={styles.deepDiveHeader}>
+          <span className={styles.deepDiveIcon}>🗂️</span>
+          <div>
+            <h2 className={styles.deepDiveTitle}>The Complete Architecture</h2>
+            <p className={styles.deepDiveSub}>
+              Three tiers of config — each with its own lifetime and loading
+              strategy. The AI only loads what's relevant to the current task.
+            </p>
+          </div>
+        </div>
+
+        <div className={styles.codeBlock} style={{ marginBottom: "2rem" }}>
+          <span className={styles.codeLabel}>Full directory layout</span>
+          <pre className={styles.codePre}>
+            <code>{`~/
+├── .ai/                            ← GLOBAL config (all projects on this machine)
+│   ├── always.md                   ← ≤200 tokens, loads on every message
+│   └── integrations/
+│       ├── obsidian/INTEGRATION.md ← Obsidian vault rules for the AI
+│       ├── claude-mem/INTEGRATION.md ← session memory rules
+│       └── graphify/INTEGRATION.md ← knowledge graph rules (optional)
+│
+├── ai-brain/                       ← OBSIDIAN VAULT (your second brain)
+│   ├── .raw/                       ← drop PDFs, docs, videos, screenshots here
+│   └── wiki/
+│       ├── hot.md                  ← session cache (auto-loaded by claude-obsidian)
+│       ├── index.md                ← master catalog
+│       ├── concepts/               ← extracted ideas
+│       ├── entities/               ← people, tools, companies
+│       ├── projects/
+│       │   ├── my-saas/            ← notes for this project
+│       │   └── other-project/
+│       └── sources/                ← processed versions of .raw/ files
+│
+└── projects/
+    └── my-saas/                    ← PROJECT config
+        ├── SPEC.md                 ← root spec, always loaded (~150 tokens)
+        ├── CLAUDE.md               ← MAP — entry point, points to everything
+        ├── AGENTS.md               ← Copilot/Codex bridge
+        ├── .cursor/rules/          ← Cursor bridge
+        ├── .vscode/settings.json   ← VS Code bridge (JSON merge)
+        ├── GEMINI.md               ← Gemini bridge
+        ├── .windsurfrules          ← Windsurf bridge
+        │
+        ├── .ai/                    ← project skills, agents, rules
+        │   ├── skills/
+        │   │   ├── modern-react/SKILL.md
+        │   │   └── api-design/SKILL.md
+        │   ├── agents/
+        │   │   └── code-reviewer/AGENT.md
+        │   ├── rules/
+        │   │   └── always.md
+        │   └── commands/
+        │       └── code-review.md
+        │
+        └── docs/spec/              ← HIERARCHICAL SPECS (load on demand)
+            ├── auth/SPEC.md        ← load when: auth, login, session
+            ├── inventory/SPEC.md   ← load when: stock, SKU, warehouse
+            ├── billing/SPEC.md     ← load when: stripe, invoice, plan
+            └── dashboard/SPEC.md   ← load when: charts, analytics, metrics`}</code>
+          </pre>
+        </div>
+
+        {/* Token breakdown */}
+        <div className={styles.deepDiveWhat}>
+          <h3 className={styles.deepDiveWhatTitle}>
+            How Claude uses this — real token count
+          </h3>
+          <p className={styles.deepDiveWhatDesc}>
+            Working on the inventory bulk-edit feature: Claude loads{" "}
+            <strong>~430 tokens</strong> of precise context — not 6,000 tokens
+            of everything. Here's exactly what gets loaded and when.
+          </p>
+          <div className={styles.codeBlock} style={{ marginTop: "1rem" }}>
+            <span className={styles.codeLabel}>Token budget breakdown</span>
+            <pre className={styles.codePre}>
+              <code>{`Step 1  CLAUDE.md auto-loads           ~80 tokens   (maps, not content)
+Step 2  SPEC.md always loads           ~150 tokens  (what the app is)
+Step 3  You say: "working on inventory bulk edit"
+Step 4  Claude reads Spec Map → loads:
+        docs/spec/inventory/SPEC.md    ~200 tokens  (inventory context only)
+                                      ──────────────────────────────────────
+                          Total:       ~430 tokens  ✅
+
+vs loading everything upfront:        ~6,000–8,000 tokens  ❌`}</code>
+            </pre>
+          </div>
+        </div>
+
+        {/* The four types */}
+        <div className={styles.deepDiveExample} style={{ marginTop: "1.5rem" }}>
+          <div className={styles.deepDiveExampleLabel}>
+            <span>One rule to remember — four types of context</span>
+          </div>
+          <div className={styles.codeBlock}>
+            <span className={styles.codeLabel}>What each file is for</span>
+            <pre className={styles.codePre}>
+              <code>{`Root SPEC.md   → what the app IS           always loaded,    ~150 tokens
+Page SPEC.md   → what this feature DOES    on demand,        ~200 tokens
+.ai/ skills    → how to CODE it            by file type,     ~300 tokens
+Obsidian       → why decisions were made   you paste it,     ~400 tokens`}</code>
+            </pre>
+          </div>
         </div>
       </section>
 
