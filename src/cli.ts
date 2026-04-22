@@ -241,7 +241,7 @@ function handleInstallResult(
   if (result.failed > 0) {
     spinner.stop(`Installed ${result.successful}/${result.total} items`);
     for (const r of result.results.filter((r) => !r.success)) {
-      showError(`Failed: ${r.item.name} → ${r.assistant.name}: ${r.error}`);
+      showError(`Failed: ${r.item.name} → ${r.assistant?.name ?? "universal"}: ${r.error}`);
     }
   } else {
     spinner.stop(`Successfully installed ${result.successful} items`);
@@ -368,16 +368,16 @@ async function cmdAdd(
   if (!scope) return;
 
   // Resolve method
-  const method = await resolveMethod(options);
+  const method = await resolveMethod(options, contentType);
   if (!method) return;
 
   // Install
   const spinner = startSpinner("Installing...");
   const result = await installItems(items, assistants, scope, method);
-  handleInstallResult(result, spinner, items, assistants);
+  handleInstallResult(result, spinner, items, assistants.length > 0 ? assistants : undefined);
 
-  // Auto-generate bridge files after successful install
-  if (result.successful > 0 && scope === "project") {
+  // Auto-generate bridge files after successful install (not for integrations)
+  if (result.successful > 0 && scope === "project" && contentType !== "integration") {
     const bridgeIds = await resolveBridgeIds(options);
     await autoGenerateBridgeFiles(assistants, bridgeIds);
   }
@@ -390,6 +390,9 @@ async function resolveAssistants(
   contentType: ContentType,
   options: CliArgs["options"],
 ): Promise<AssistantConfig[] | null> {
+  // Integrations are universal — no assistant selection needed
+  if (contentType === "integration") return [];
+
   if (options.agents.length > 0) {
     return getAllAssistants().filter((a) => options.agents.includes(a.id));
   }
@@ -436,7 +439,10 @@ async function resolveScope(
  */
 async function resolveMethod(
   options: CliArgs["options"],
+  contentType?: ContentType,
 ): Promise<InstallMethod | null> {
+  // Integrations are always copied — symlinking an integration guide makes no sense
+  if (contentType === "integration") return "copy";
   if (options.yes) return "symlink";
 
   const selected = await selectMethod();
@@ -994,6 +1000,22 @@ Your prompt template here with {{variables}}
 - \`variable1\`: Description
 - \`variable2\`: Description
 `,
+    integration: `---
+name: ${itemName}
+description: Description of this integration
+setup: "command to run once"
+---
+
+# ${itemName} Integration
+
+## What it does
+
+Describe what this integration provides.
+
+## Setup
+
+Run the setup command above, then use the integration.
+`,
   };
 
   const fileNames: Record<ContentType, string> = {
@@ -1002,6 +1024,7 @@ Your prompt template here with {{variables}}
     commands: "COMMAND.md",
     rules: "RULE.md",
     prompts: "PROMPT.md",
+    integration: "INTEGRATION.md",
   };
 
   const dirPath = path.join(process.cwd(), String(itemName));

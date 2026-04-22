@@ -15,7 +15,8 @@ export type ContentType =
   | "agents"
   | "commands"
   | "rules"
-  | "prompts";
+  | "prompts"
+  | "integration";
 
 // ============================================================================
 // Installation Types
@@ -49,6 +50,8 @@ export interface CatalogItem {
   path: string;
   /** Full content (loaded on demand) */
   content?: string;
+  /** One-time external setup command to display after install (integrations only) */
+  setup?: string;
 }
 
 /** Serializable catalog index for web viewer */
@@ -106,7 +109,7 @@ export interface LockFile {
 export interface InstallResult {
   success: boolean;
   item: CatalogItem;
-  assistant: AssistantConfig;
+  assistant?: AssistantConfig;
   path: string;
   error?: string;
 }

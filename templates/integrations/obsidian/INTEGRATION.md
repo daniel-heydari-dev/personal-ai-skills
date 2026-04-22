@@ -1,3 +1,11 @@
+---
+name: obsidian
+description: Obsidian vault integration for persistent AI memory. Use when you want a second brain that persists across Claude sessions, storing notes, research, and project knowledge automatically.
+category: integrations
+tags: [memory, obsidian, knowledge-base, second-brain]
+setup: "git clone https://github.com/AgriciDaniel/claude-obsidian ~/ai-brain"
+---
+
 # Obsidian Integration
 
 **Vault path:** `~/ai-brain/`

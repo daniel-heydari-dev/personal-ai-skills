@@ -1,3 +1,11 @@
+---
+name: claude-mem
+description: Session memory tool for Claude. Use when you want to automatically carry context across Claude sessions with ~10x token savings via progressive disclosure.
+category: integrations
+tags: [memory, session, tokens, mcp]
+setup: "npx claude-mem install"
+---
+
 # claude-mem Integration
 
 **Install:** `npx claude-mem install`

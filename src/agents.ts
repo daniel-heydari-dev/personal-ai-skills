@@ -461,7 +461,7 @@ export function getContentPath(
  * Get all content types
  */
 export function getAllContentTypes(): ContentType[] {
-  return ["skills", "agents", "commands", "rules", "prompts"];
+  return ["skills", "agents", "commands", "rules", "prompts", "integration"];
 }
 
 /**
@@ -474,9 +474,20 @@ export function getContentTypeDisplayName(contentType: ContentType): string {
     commands: "Commands",
     rules: "Rules",
     prompts: "Prompts",
+    integration: "Integrations",
   };
   return names[contentType];
 }
+
+/** Fallback assistant used for universal installs (integrations). */
+export const UNIVERSAL_ASSISTANT: AssistantConfig = {
+  name: "Universal (.ai/)",
+  id: "universal",
+  description: "Universal — installs to .ai/ for all assistants",
+  detectInstalled: async () => true,
+  paths: {},
+  globalPaths: {},
+};
 
 /**
  * Canonical directory name — the single source of truth for all AI content.

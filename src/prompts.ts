@@ -323,11 +323,21 @@ export function showInstallSuccess(
   assistants: AssistantConfig[],
 ): void {
   const itemList = items.map((i) => `  • ${i.name}`).join("\n");
-  const assistantList = assistants.map((a) => `  • ${a.name}`).join("\n");
 
-  p.outro(
-    `✅ Successfully installed!\n\nItems:\n${itemList}\n\nTo:\n${assistantList}`,
-  );
+  const setupItems = items.filter((i) => i.type === "integration" && i.setup);
+  const setupNote =
+    setupItems.length > 0
+      ? `\n\nNext step — run to complete setup:\n${setupItems.map((i) => `  ${i.name}: ${i.setup}`).join("\n")}`
+      : "";
+
+  if (assistants.length === 0 || (assistants.length === 1 && assistants[0]?.id === "universal")) {
+    p.outro(`✅ Successfully installed!\n\nItems:\n${itemList}${setupNote}`);
+  } else {
+    const assistantList = assistants.map((a) => `  • ${a.name}`).join("\n");
+    p.outro(
+      `✅ Successfully installed!\n\nItems:\n${itemList}\n\nTo:\n${assistantList}${setupNote}`,
+    );
+  }
 }
 
 /**

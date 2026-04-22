@@ -1,3 +1,11 @@
+---
+name: graphify
+description: Knowledge graph tool for large codebases. Use when starting exploration of a new large project (50+ files) to map the entire codebase as a graph, achieving up to 71x token reduction.
+category: integrations
+tags: [knowledge-graph, codebase, on-demand, token-reduction]
+setup: "pip install graphifyy && graphify install"
+---
+
 # graphify Integration (optional)
 
 **Install:** `pip install graphifyy && graphify install`

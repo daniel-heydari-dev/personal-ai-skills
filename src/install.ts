@@ -18,7 +18,7 @@ import type {
   InstallScope,
   InstallMethod,
 } from "./types.js";
-import { getCanonicalPath } from "./agents.js";
+import { getCanonicalPath, UNIVERSAL_ASSISTANT } from "./agents.js";
 import { getItemFilePath } from "./catalog.js";
 import { updateLockFile } from "./lock.js";
 
@@ -127,8 +127,8 @@ export async function installItems(
   projectRoot: string = process.cwd(),
 ): Promise<InstallSummary> {
   const results: InstallResult[] = [];
-  const assistantIds = assistants.map((a) => a.id);
-  const representative = assistants[0];
+  const assistantIds = assistants.length > 0 ? assistants.map((a) => a.id) : ["universal"];
+  const representative = assistants[0] ?? UNIVERSAL_ASSISTANT;
 
   for (const item of items) {
     const result = await installToAi(item, scope, projectRoot);

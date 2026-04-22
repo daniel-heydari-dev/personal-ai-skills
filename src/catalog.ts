@@ -102,6 +102,7 @@ function getContentFileName(type: ContentType): string {
     commands: "COMMAND.md",
     rules: "RULE.md",
     prompts: "PROMPT.md",
+    integration: "INTEGRATION.md",
   };
   return fileNames[type];
 }
@@ -286,6 +287,7 @@ export async function loadCatalogItem(
       tags: frontmatter.tags as string[] | undefined,
       path: path.relative(templatesRoot, itemDir),
       content,
+      setup: frontmatter.setup as string | undefined,
     };
   } catch {
     return null;
