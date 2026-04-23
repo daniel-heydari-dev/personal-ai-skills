@@ -64,7 +64,8 @@
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "prepack": "pnpm run build",
-    "prepublishOnly": "pnpm run test && pnpm run build:all"
+    "prepublishOnly": "pnpm run test && pnpm run build:all",
+    "release": "source .env && npm set //registry.npmjs.org/:_authToken $NPM_TOKEN && pnpm publish --access public --no-git-checks"
   },
   "dependencies": {
     "@clack/prompts": "^1.2.0"
