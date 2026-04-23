@@ -120,21 +120,21 @@ describe("generateBridgeFilesForIds — bridge selection logic", () => {
 });
 
 describe("CLAUDE.md bridge — map pattern", () => {
-  it("CLAUDE.md content is under 500 chars (map pattern, not content dump)", async () => {
+  it("CLAUDE.md is map pattern — not a content dump", async () => {
     const tmp = makeTempDir();
     const files = await generateBridgeFilesForIds(["claude"], tmp);
     const claudeFile = files.find((f) => f.filePath === "CLAUDE.md");
     expect(claudeFile).toBeDefined();
-    // Map-pattern CLAUDE.md should be concise
-    expect(claudeFile!.content.length).toBeLessThan(600);
+    // Map-pattern CLAUDE.md has tables pointing to .ai/ — richer than old stub but not a content dump
+    expect(claudeFile!.content.length).toBeLessThan(2500);
     fs.rmSync(tmp, { recursive: true });
   });
 
-  it("CLAUDE.md content contains ALWAYS LOAD section", async () => {
+  it("CLAUDE.md content contains Always Load section", async () => {
     const tmp = makeTempDir();
     const files = await generateBridgeFilesForIds(["claude"], tmp);
     const claudeFile = files.find((f) => f.filePath === "CLAUDE.md");
-    expect(claudeFile!.content).toContain("ALWAYS LOAD");
+    expect(claudeFile!.content).toContain("Always Load");
     fs.rmSync(tmp, { recursive: true });
   });
 });

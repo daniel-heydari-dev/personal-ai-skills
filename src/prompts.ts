@@ -245,14 +245,41 @@ export async function confirmInstall(
   return confirmed;
 }
 
-/**
- * Ask for the Obsidian vault path (used once, saved to preferences)
- */
+// ============================================================================
+// Wizard Result Types
+// ============================================================================
+
+export interface ProjectSetup {
+  name: string;
+  description: string;
+  stack: string;
+  slug: string;
+}
+
+export interface WizardResult extends InstallOptions {
+  obsidianVaultPath: string;
+  memoryTools: string[];         // e.g. ['obsidian', 'claude-mem', 'graphify']
+  projectSetup?: ProjectSetup;   // undefined = user skipped spec scaffolding
+  bridgeIds: string[];           // which bridge files to generate
+}
+
+const MEMORY_TOOL_NEXT_STEPS: Record<string, string> = {
+  obsidian: "git clone https://github.com/AgriciDaniel/claude-obsidian ~/ai-brain",
+  "claude-mem": "npx claude-mem install",
+  graphify: "pip install graphifyy && graphify install",
+};
+
+export const MEMORY_TOOL_NEXT_STEPS_MAP = MEMORY_TOOL_NEXT_STEPS;
+
+// ============================================================================
+// Step 1 helpers
+// ============================================================================
+
 export async function askObsidianVaultPath(
   existingPath?: string,
 ): Promise<string | symbol> {
   return p.text({
-    message: "Where is your Obsidian vault (ai-brain)?",
+    message: "Where is your Obsidian vault (second brain)?",
     placeholder: "~/ai-brain",
     defaultValue: existingPath || "~/ai-brain",
     validate(value) {
@@ -261,93 +288,160 @@ export async function askObsidianVaultPath(
   });
 }
 
+export async function selectMemoryTools(): Promise<string[] | symbol> {
+  return p.multiselect({
+    message: "Set up memory tools (select any — or press Enter to skip):",
+    options: [
+      {
+        value: "obsidian",
+        label: "claude-obsidian",
+        hint: "second brain — drop files in .raw/, Claude organises wiki/",
+      },
+      {
+        value: "claude-mem",
+        label: "claude-mem",
+        hint: "session memory — ~10x token savings, runs automatically",
+      },
+      {
+        value: "graphify",
+        label: "graphify (optional)",
+        hint: "knowledge graph — 71x token reduction for large codebases",
+      },
+    ],
+    required: false,
+  });
+}
+
+// ============================================================================
+// Step 3 helpers
+// ============================================================================
+
+export async function askProjectSetup(
+  defaultName: string,
+): Promise<ProjectSetup | null | symbol> {
+  const wantsSpec = await p.confirm({
+    message: "Create SPEC.md + CLAUDE.md for this project?",
+    initialValue: true,
+  });
+  if (p.isCancel(wantsSpec) || !wantsSpec) return null;
+
+  const name = await p.text({
+    message: "Project name:",
+    placeholder: defaultName,
+    defaultValue: defaultName,
+  });
+  if (p.isCancel(name)) return name;
+
+  const description = await p.text({
+    message: "One-line description:",
+    placeholder: "What does this project do?",
+  });
+  if (p.isCancel(description)) return description;
+
+  const stack = await p.text({
+    message: "Tech stack:",
+    placeholder: "Next.js, TypeScript, Postgres",
+  });
+  if (p.isCancel(stack)) return stack;
+
+  const slug = String(name)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  return {
+    name: String(name),
+    description: String(description),
+    stack: String(stack),
+    slug,
+  };
+}
+
+// ============================================================================
+// Main wizard
+// ============================================================================
+
 /**
- * Run full interactive install flow
+ * Full 4-step onboarding wizard:
+ *   1. Memory stack (vault path + tool selection)
+ *   2. Content install (skills, agents, integrations, …)
+ *   3. Project setup (SPEC.md + CLAUDE.md)
+ *   4. Bridge files (which editors)
  */
 export async function runInteractiveInstall(
   catalog: Map<ContentType, CatalogItem[]>,
   savedVaultPath?: string,
-): Promise<(InstallOptions & { obsidianVaultPath: string }) | null> {
-  p.intro("🚀 personal-ai-skills installer");
+  defaultProjectName?: string,
+): Promise<WizardResult | null> {
+  p.intro("🚀 personal-ai-skills");
 
-  // 0. Ask for Obsidian vault path (skip if already saved and user hasn't changed it)
+  // ── Step 1: Memory Stack ─────────────────────────────────────────────────
+  p.log.step("Step 1 of 4 — Memory Stack");
+
   const vaultPathResult = await askObsidianVaultPath(savedVaultPath);
-  if (p.isCancel(vaultPathResult)) {
-    p.cancel("Installation cancelled");
-    return null;
-  }
+  if (p.isCancel(vaultPathResult)) { p.cancel("Cancelled"); return null; }
   const obsidianVaultPath = (vaultPathResult as string).trim() || "~/ai-brain";
 
-  // 1. Select content types (multi-select)
+  const memoryResult = await selectMemoryTools();
+  if (p.isCancel(memoryResult)) { p.cancel("Cancelled"); return null; }
+  const memoryTools = (memoryResult as string[]) ?? [];
+
+  // ── Step 2: Content ──────────────────────────────────────────────────────
+  p.log.step("Step 2 of 4 — Install Content");
+
   const contentTypesResult = await selectContentTypes();
-  if (p.isCancel(contentTypesResult)) {
-    p.cancel("Installation cancelled");
-    return null;
-  }
+  if (p.isCancel(contentTypesResult)) { p.cancel("Cancelled"); return null; }
   const contentTypes = contentTypesResult as ContentType[];
 
-  // 2. For each content type, select items
   const allSelectedItems: CatalogItem[] = [];
-
   for (const contentType of contentTypes) {
-    const availableItems = catalog.get(contentType) || [];
-    if (availableItems.length === 0) {
-      p.log.warn(
-        `No ${getContentTypeDisplayName(contentType).toLowerCase()} available, skipping.`,
-      );
+    const available = catalog.get(contentType) || [];
+    if (available.length === 0) {
+      p.log.warn(`No ${getContentTypeDisplayName(contentType).toLowerCase()} available, skipping.`);
       continue;
     }
-
-    const selectedItemsResult = await selectItems(availableItems, contentType);
-    if (p.isCancel(selectedItemsResult)) {
-      p.cancel("Installation cancelled");
-      return null;
-    }
-    allSelectedItems.push(...(selectedItemsResult as CatalogItem[]));
+    const selectedResult = await selectItems(available, contentType);
+    if (p.isCancel(selectedResult)) { p.cancel("Cancelled"); return null; }
+    allSelectedItems.push(...(selectedResult as CatalogItem[]));
   }
 
-  if (allSelectedItems.length === 0) {
-    p.cancel("No items selected");
-    return null;
-  }
+  // ── Step 3: Project Setup ────────────────────────────────────────────────
+  p.log.step("Step 3 of 4 — Project Setup");
 
-  // 3. Auto-detect assistants for bridge files (no need to ask — everything goes to .ai/)
+  const setupResult = await askProjectSetup(defaultProjectName || "my-project");
+  if (p.isCancel(setupResult)) { p.cancel("Cancelled"); return null; }
+  const projectSetup = setupResult ?? undefined;
+
+  // ── Step 4: Bridge Files ─────────────────────────────────────────────────
+  p.log.step("Step 4 of 4 — Bridge Files");
+
+  const bridgeResult = await selectBridges();
+  if (p.isCancel(bridgeResult)) { p.cancel("Cancelled"); return null; }
+  const bridgeIds = (bridgeResult as string[]) ?? [];
+
+  // ── Resolve assistants & scope ───────────────────────────────────────────
   const detectedAssistants = await detectInstalledAssistants();
-  if (detectedAssistants.length === 0) {
-    p.log.warn("No AI assistants detected — installing to .ai/ anyway.");
-  } else {
-    p.log.info(`Detected: ${detectedAssistants.map((a) => a.name).join(", ")}`);
-  }
+  const assistants = detectedAssistants.length > 0
+    ? detectedAssistants
+    : getAllAssistants().slice(0, 1);
 
-  // 4. Select scope
-  const scope = await selectScope();
-  if (p.isCancel(scope)) {
-    p.cancel("Installation cancelled");
+  const scope = "project" as InstallScope;
+
+  if (allSelectedItems.length === 0 && !projectSetup && memoryTools.length === 0) {
+    p.cancel("Nothing selected — nothing to do.");
     return null;
   }
 
-  // Use all available assistants for bridge file generation
-  const assistants =
-    detectedAssistants.length > 0
-      ? detectedAssistants
-      : getAllAssistants().slice(0, 1); // Fallback to first assistant for lock file
-
-  // 5. Build options
-  const options: InstallOptions = {
+  return {
     items: allSelectedItems,
     assistants,
-    scope: scope as InstallScope,
+    scope,
     method: "symlink" as InstallMethod,
+    obsidianVaultPath,
+    memoryTools,
+    projectSetup,
+    bridgeIds,
   };
-
-  // 8. Confirm
-  const confirmed = await confirmInstall(options);
-  if (p.isCancel(confirmed) || !confirmed) {
-    p.cancel("Installation cancelled");
-    return null;
-  }
-
-  return { ...options, obsidianVaultPath };
 }
 
 /**

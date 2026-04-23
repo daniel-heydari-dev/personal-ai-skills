@@ -38,11 +38,13 @@ import {
   selectMethod,
   selectBridges,
   ALL_BRIDGE_IDS,
+  MEMORY_TOOL_NEXT_STEPS_MAP,
   showInstallSuccess,
   showError,
   showInfo,
   startSpinner,
 } from "./prompts.js";
+import type { ProjectSetup } from "./prompts.js";
 import { installItems, uninstallItem } from "./install.js";
 import { getInstalledItems, getInstalledItemsByType, getPreferences, savePreferences } from "./lock.js";
 import { fetchSkillFromSource } from "./github.js";
@@ -303,30 +305,75 @@ async function cmdAdd(
     return;
   }
 
-  // No source: interactive mode
+  // No source: full interactive wizard
   if (!source) {
     const catalog = await loadCatalog();
     const prefs = await getPreferences("global");
-    const installOptions = await runInteractiveInstall(catalog, prefs?.obsidianVaultPath);
-    if (!installOptions) return;
+    const projectRoot = process.cwd();
 
-    // Save vault path preference for next run
-    await savePreferences({ obsidianVaultPath: installOptions.obsidianVaultPath }, "global");
-
-    const spinner = startSpinner("Installing...");
-    const result = await installItems(
-      installOptions.items,
-      installOptions.assistants,
-      installOptions.scope,
-      installOptions.method,
+    const wizard = await runInteractiveInstall(
+      catalog,
+      prefs?.obsidianVaultPath,
+      path.basename(projectRoot),
     );
-    handleInstallResult(result, spinner);
+    if (!wizard) return;
 
-    // Auto-generate bridge files after successful install
-    if (result.successful > 0 && installOptions.scope === "project") {
-      const bridgeIds = await resolveBridgeIds(options);
-      await autoGenerateBridgeFiles(installOptions.assistants, bridgeIds);
+    // Save vault path for next run (remembered across projects)
+    await savePreferences({ obsidianVaultPath: wizard.obsidianVaultPath }, "global");
+
+    // Install content items (skills, agents, etc.)
+    if (wizard.items.length > 0) {
+      const spinner = startSpinner("Installing content...");
+      const result = await installItems(
+        wizard.items,
+        wizard.assistants,
+        wizard.scope,
+        wizard.method,
+        projectRoot,
+      );
+      handleInstallResult(result, spinner);
     }
+
+    // Scaffold SPEC.md + CLAUDE.md
+    if (wizard.projectSetup) {
+      const { specCreated, claudeCreated } = await scaffoldProjectSpec(
+        wizard.projectSetup,
+        wizard.obsidianVaultPath,
+        projectRoot,
+      );
+      if (specCreated) showInfo("Created SPEC.md — fill in your project details");
+      if (claudeCreated) showInfo(`Created CLAUDE.md — vault path set to ${wizard.obsidianVaultPath}`);
+    }
+
+    // Generate bridge files with vault path baked in
+    if (wizard.bridgeIds.length > 0) {
+      const files = await generateBridgeFilesForIds(
+        wizard.bridgeIds,
+        projectRoot,
+        wizard.obsidianVaultPath,
+      );
+      if (files.length > 0) {
+        const { written, skipped } = await writeBridgeFiles(files, projectRoot);
+        if (written.length > 0) showInfo(`Generated: ${written.join(", ")}`);
+        if (skipped.length > 0) showInfo(`Skipped (already exist): ${skipped.join(", ")}`);
+      }
+    }
+
+    // Show one-time setup commands for memory tools
+    const nextSteps = wizard.memoryTools
+      .map((tool) => MEMORY_TOOL_NEXT_STEPS_MAP[tool])
+      .filter(Boolean);
+    if (nextSteps.length > 0) {
+      showInfo(
+        `\n📋 One-time setup — run these to activate your memory tools:\n${
+          wizard.memoryTools
+            .filter((t) => MEMORY_TOOL_NEXT_STEPS_MAP[t])
+            .map((t) => `  ${t}: ${MEMORY_TOOL_NEXT_STEPS_MAP[t]}`)
+            .join("\n")
+        }`,
+      );
+    }
+
     return;
   }
 
@@ -760,6 +807,56 @@ async function updateSpecMap(
   const newRow = `| ${specName} | ${specRelPath} |`;
   lines.splice(lastTableLine + 1, 0, newRow);
   await fs.promises.writeFile(rootSpecPath, lines.join("\n"), "utf-8");
+}
+
+/**
+ * Scaffold SPEC.md (and optionally CLAUDE.md) from templates — called programmatically
+ * from the wizard so it doesn't need interactive prompts.
+ */
+async function scaffoldProjectSpec(
+  setup: ProjectSetup,
+  vaultPath: string,
+  projectRoot: string,
+): Promise<{ specCreated: boolean; claudeCreated: boolean }> {
+  const templatesRoot = getPackageTemplatesRoot();
+  let specCreated = false;
+  let claudeCreated = false;
+
+  // SPEC.md
+  const specDest = path.join(projectRoot, "SPEC.md");
+  if (!fs.existsSync(specDest)) {
+    let template = await fs.promises.readFile(
+      path.join(templatesRoot, "shared", "SPEC.root.md"),
+      "utf-8",
+    );
+    template = template
+      .replace(/\{\{PROJECT_NAME\}\}/g, setup.name)
+      .replace(/\{\{ONE_LINE_DESCRIPTION\}\}/g, setup.description)
+      .replace(/\{\{TECH_STACK\}\}/g, setup.stack)
+      .replace(/\{\{PROJECT_SLUG\}\}/g, setup.slug);
+    await fs.promises.writeFile(specDest, template, "utf-8");
+    specCreated = true;
+  }
+
+  // CLAUDE.md — from the shared template, substituting vault path and slug
+  const claudeDest = path.join(projectRoot, "CLAUDE.md");
+  if (!fs.existsSync(claudeDest)) {
+    let template = await fs.promises.readFile(
+      path.join(templatesRoot, "shared", "CLAUDE.md"),
+      "utf-8",
+    );
+    const resolvedVault = vaultPath.startsWith("~")
+      ? vaultPath
+      : `~/${vaultPath.replace(/^\//, "")}`;
+    template = template
+      .replace(/\{\{PROJECT_NAME\}\}/g, setup.name)
+      .replace(/\{\{PROJECT_SLUG\}\}/g, setup.slug)
+      .replace(/~\/ai-brain/g, resolvedVault);
+    await fs.promises.writeFile(claudeDest, template, "utf-8");
+    claudeCreated = true;
+  }
+
+  return { specCreated, claudeCreated };
 }
 
 /**

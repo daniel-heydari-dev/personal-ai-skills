@@ -136,21 +136,23 @@ function buildCoreInstructions(dirs: string[]): string {
 // Editor-Specific Bridge Files
 // ============================================================================
 
-function claudeBridge(dirs: string[]): BridgeFile {
+function claudeBridge(dirs: string[], vaultPath = "~/ai-brain"): BridgeFile {
   const skillsLine = dirs.includes("skills")
-    ? "\n- Skills: `.ai/skills/` — load by file type / topic"
+    ? "\n| React / TS components   | `.ai/skills/modern-react/`           |\n| API routes, REST        | `.ai/skills/api-design/`             |\n| Tests                   | `.ai/skills/testing-best-practices/` |"
     : "";
   const agentsLine = dirs.includes("agents")
-    ? "\n- Agents: `.ai/agents/` — load only when that role is requested"
+    ? "\n\n## 🗺️ Agents Map\n| Role requested          | Load                                 |\n| ----------------------- | ------------------------------------ |\n| Code review             | `.ai/agents/code-reviewer/`          |\n| Security audit          | `.ai/agents/security-auditor/`       |"
     : "";
   const rulesLine = dirs.includes("rules")
-    ? "\n- Rules: `.ai/rules/` — **always follow**, read before writing code"
+    ? "\n- Core rules: `.ai/rules/always.md` — always follow"
     : "";
   const commandsLine = dirs.includes("commands")
-    ? "\n- Commands: `.ai/commands/` — load when user references a command"
+    ? "\n- Commands: `.ai/commands/` — load when user references a slash command"
     : "";
-  const specsLine =
-    "\n- Sub-specs: `docs/spec/*/SPEC.md` — load only when relevant";
+
+  const skillsSection = dirs.includes("skills")
+    ? `\n\n## 🗺️ Skills Map\n| When working on         | Load                                 |\n| ----------------------- | ------------------------------------ |${skillsLine}`
+    : "";
 
   return {
     editorId: "claude",
@@ -158,12 +160,32 @@ function claudeBridge(dirs: string[]): BridgeFile {
     description: "Claude Code context file (map pattern)",
     content: `# CLAUDE.md
 
-## ⚡ ALWAYS LOAD
-- Root spec: \`SPEC.md\` (if it exists)${rulesLine}
+<!--
+  Entry point for every Claude session. Keep this file THIN — it is a MAP.
+  Target: under 100 tokens. Real content lives in the files it points to.
+-->
 
-## 🗺️ REFERENCE MAP (load only when relevant)
-${skillsLine}${agentsLine}${commandsLine}${specsLine}
-- Obsidian brain: \`~/ai-brain/wiki/hot.md\` — recent session context
+## ⚡ Always Load
+- Root spec: \`SPEC.md\` — what this project is, tech stack, key rules${rulesLine}
+
+## 🗺️ Spec Map
+> Load the matching sub-spec when the user mentions these topics.
+
+| Topic                    | Keywords                              | Load                              |
+| ------------------------ | ------------------------------------- | --------------------------------- |
+| auth, login, session     | auth, login, logout, JWT, password    | \`docs/spec/auth/SPEC.md\`        |
+| (add more rows below)    | (keywords)                            | \`docs/spec/<name>/SPEC.md\`      |
+${skillsSection}${agentsLine}${commandsLine}
+
+## 🗺️ Obsidian Map
+| Topic                    | Load                                                     |
+| ------------------------ | -------------------------------------------------------- |
+| Recent session context   | \`${vaultPath}/wiki/hot.md\`                             |
+| Architecture decisions   | \`${vaultPath}/wiki/projects/<slug>/decisions.md\`       |
+
+## 🧠 Memory
+claude-mem runs automatically — past session context is already injected.
+Use \`search_memory\` MCP tool if you need older context.
 `,
   };
 }
@@ -279,7 +301,7 @@ async function vscodeBridge(
 // ============================================================================
 
 /** All available bridge file generators, keyed by editor ID */
-const BRIDGE_GENERATORS: Record<string, (dirs: string[]) => BridgeFile> = {
+const BRIDGE_GENERATORS: Record<string, (dirs: string[], vaultPath?: string) => BridgeFile> = {
   claude: claudeBridge,
   cursor: cursorBridge,
   copilot: copilotBridge,
@@ -322,33 +344,28 @@ const ASSISTANT_TO_BRIDGE: Record<string, string> = {
 export async function generateBridgeFiles(
   assistants: AssistantConfig[],
   projectRoot: string = process.cwd(),
+  vaultPath?: string,
 ): Promise<BridgeFile[]> {
   const dirs = await getExistingDirs(projectRoot);
   if (dirs.length === 0) {
-    // No .ai/ content yet — still generate with a default set
     dirs.push("skills", "rules");
   }
 
-  // Collect unique bridge types needed
   const bridgeKeys = new Set<string>();
   for (const assistant of assistants) {
     const key = ASSISTANT_TO_BRIDGE[assistant.id];
     if (key) bridgeKeys.add(key);
   }
-
-  // Always include AGENTS.md for universal compatibility
   bridgeKeys.add("universal");
 
-  // Generate bridge files
   const files: BridgeFile[] = [];
   for (const key of bridgeKeys) {
     if (key === "vscode") {
-      // VS Code bridge is async — it reads existing settings.json to merge
       files.push(await vscodeBridge(dirs, projectRoot));
     } else {
       const generator = BRIDGE_GENERATORS[key];
       if (generator) {
-        files.push(generator(dirs));
+        files.push(generator(dirs, vaultPath));
       }
     }
   }
@@ -408,6 +425,7 @@ export function getAvailableBridgeTypes(): string[] {
 export async function generateBridgeFilesForIds(
   bridgeIds: string[],
   projectRoot: string = process.cwd(),
+  vaultPath?: string,
 ): Promise<BridgeFile[]> {
   if (bridgeIds.length === 0 || bridgeIds.includes("none")) {
     return [];
@@ -418,7 +436,6 @@ export async function generateBridgeFilesForIds(
     dirs.push("skills", "rules");
   }
 
-  // Map assistant IDs (e.g. 'codex') to bridge keys (e.g. 'universal')
   const resolveKey = (id: string): string => ASSISTANT_TO_BRIDGE[id] ?? id;
 
   const keys = bridgeIds.includes("all")
@@ -432,7 +449,7 @@ export async function generateBridgeFilesForIds(
     } else {
       const generator = BRIDGE_GENERATORS[key];
       if (generator) {
-        files.push(generator(dirs));
+        files.push(generator(dirs, vaultPath));
       }
     }
   }
