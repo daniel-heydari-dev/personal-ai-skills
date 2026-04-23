@@ -74,7 +74,7 @@ export function parseFrontmatter(content: string): {
         value = (value as string).slice(1, -1);
       }
 
-      // Parse arrays
+      // Parse inline arrays: [a, b, c]
       if (
         (value as string).startsWith("[") &&
         (value as string).endsWith("]")
@@ -82,7 +82,13 @@ export function parseFrontmatter(content: string): {
         value = (value as string)
           .slice(1, -1)
           .split(",")
-          .map((s) => s.trim().replace(/^["']|["']$/g, ""));
+          .map((s) => s.trim().replace(/^["']|["']$/g, ""))
+          .filter(Boolean);
+      }
+
+      // Always store tags/keywords fields as arrays
+      if (key === "tags" && !Array.isArray(value)) {
+        value = (value as string) ? [(value as string)] : [];
       }
 
       frontmatter[key] = value;
