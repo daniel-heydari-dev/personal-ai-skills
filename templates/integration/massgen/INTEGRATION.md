@@ -2,7 +2,8 @@
 name: massgen
 description: Multi-agent AI coordination framework — run multiple AI models (Claude, GPT-5, Gemini, Grok) in parallel on the same task, share insights between agents, and reach consensus through voting.
 category: integration
-tags: [multi-agent, orchestration, llm, claude, gpt, gemini, consensus, parallel]
+tags:
+  [multi-agent, orchestration, llm, claude, gpt, gemini, consensus, parallel]
 setup: pip install massgen && massgen --setup
 source: https://github.com/massgen/massgen
 ---

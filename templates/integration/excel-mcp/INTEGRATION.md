@@ -18,6 +18,7 @@ uvx excel-mcp-server stdio
 ```
 
 Add to your Claude Code MCP config (`~/.claude/mcp_servers.json`):
+
 ```json
 {
   "excel": {
@@ -28,6 +29,7 @@ Add to your Claude Code MCP config (`~/.claude/mcp_servers.json`):
 ```
 
 Or for Claude Desktop (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+
 ```json
 {
   "mcpServers": {
@@ -41,17 +43,17 @@ Or for Claude Desktop (`~/Library/Application Support/Claude/claude_desktop_conf
 
 ## What It Enables
 
-| Capability | Examples |
-|-----------|---------|
-| **Workbooks** | Create, open, save Excel files (.xlsx) |
-| **Data** | Read/write cells, ranges, insert rows/columns |
-| **Formulas** | SUM, VLOOKUP, IF, COUNTIF, and all Excel functions |
-| **Formatting** | Cell colors, fonts, borders, number formats |
-| **Charts** | Line, bar, pie, scatter — with custom titles/labels |
-| **Pivot tables** | Group, aggregate, filter data |
-| **Tables** | Excel Table objects with structured references |
-| **Sheets** | Create, rename, copy, delete worksheets |
-| **Validation** | Data validation rules, dropdown lists |
+| Capability       | Examples                                            |
+| ---------------- | --------------------------------------------------- |
+| **Workbooks**    | Create, open, save Excel files (.xlsx)              |
+| **Data**         | Read/write cells, ranges, insert rows/columns       |
+| **Formulas**     | SUM, VLOOKUP, IF, COUNTIF, and all Excel functions  |
+| **Formatting**   | Cell colors, fonts, borders, number formats         |
+| **Charts**       | Line, bar, pie, scatter — with custom titles/labels |
+| **Pivot tables** | Group, aggregate, filter data                       |
+| **Tables**       | Excel Table objects with structured references      |
+| **Sheets**       | Create, rename, copy, delete worksheets             |
+| **Validation**   | Data validation rules, dropdown lists               |
 
 ## Example Prompts
 
@@ -65,6 +67,7 @@ Or for Claude Desktop (`~/Library/Application Support/Claude/claude_desktop_conf
 ## Remote Usage
 
 For remote connections, set `EXCEL_FILES_PATH` to specify where files are stored:
+
 ```bash
 export EXCEL_FILES_PATH=/path/to/excel/files
 uvx excel-mcp-server streamable-http
