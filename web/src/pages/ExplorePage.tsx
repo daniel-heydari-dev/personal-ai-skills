@@ -158,6 +158,25 @@ on OAuth callback
 
 Closes #847"`,
   },
+  integration: {
+    what: "Integrations connect your AI assistant to external tools — MCP servers for Excel, multi-agent frameworks, memory systems, and knowledge graph tools.",
+    why: "AI assistants are most powerful when connected to real tools. Integrations extend capabilities beyond the context window into persistent memory and external systems.",
+    how: "Follow the setup command in each integration guide. Most install via npx, uvx, or pip — then configure in your Claude or MCP settings file.",
+    highlights: [
+      "Excel manipulation without Microsoft Office",
+      "Multi-agent consensus with Claude + GPT + Gemini",
+      "Persistent memory across sessions",
+      "71x token reduction for large codebases",
+    ],
+    beforeLabel: "Without integrations",
+    afterLabel: "With excel-mcp integration",
+    beforeCode: `# Can't work with Excel files directly`,
+    afterCode: `# After: uvx excel-mcp-server stdio
+# Claude can now create, read, and modify .xlsx files
+"Create a budget tracker with monthly income,
+ expenses, savings chart, and conditional
+ formatting for negative values"`,
+  },
 };
 
 export function ExplorePage() {

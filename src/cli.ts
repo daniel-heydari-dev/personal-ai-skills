@@ -74,7 +74,7 @@ COMMANDS
   list [type]           List available or installed items
   search <query>        Search the catalog
   bridge                Generate context files for selected editors
-  update                Update all installed items
+  update [name]         Update installed items to latest version
   init <type>           Create a new SKILL.md / AGENT.md / etc. template
   init spec             Create root SPEC.md (three-tier architecture)
   init spec <name>      Create docs/spec/<name>/SPEC.md + update Spec Map
@@ -534,15 +534,27 @@ async function cmdBridge(
   _args: string[],
   options: CliArgs["options"],
 ): Promise<void> {
-  // Resolve which bridge types to generate
-  const bridgeIds = await resolveBridgeIds(options);
+  const isGlobal = options.global;
+
+  // Global bridge: write to ~/.claude/ so Claude Code loads it in every project
+  const outputRoot = isGlobal
+    ? path.join(process.env["HOME"] ?? "~", ".claude")
+    : process.cwd();
+
+  // Global mode defaults to claude-only bridge (the only editor with a true global config)
+  const bridgeIds = isGlobal && !options.bridges
+    ? ["claude"]
+    : await resolveBridgeIds(options);
 
   if (bridgeIds.length === 0) {
     showInfo("No bridges selected.");
     return;
   }
 
-  const files = await generateBridgeFilesForIds(bridgeIds);
+  // For global bridge, reference ~/.ai/ instead of .ai/
+  const prefs = await getPreferences("global");
+  const vaultPath = prefs?.obsidianVaultPath ?? "~/ai-brain";
+  const files = await generateBridgeFilesForIds(bridgeIds, outputRoot, vaultPath);
 
   if (files.length === 0) {
     showInfo("No bridge files to generate.");
@@ -550,16 +562,18 @@ async function cmdBridge(
   }
 
   // Show what will be generated
-  console.log("\nBridge files to generate:\n");
+  const label = isGlobal ? "Global bridge files (loaded in every project):" : "Bridge files to generate:";
+  console.log(`\n${label}\n`);
   for (const file of files) {
-    console.log(`  ${file.filePath} — ${file.description}`);
+    const fullPath = path.join(outputRoot, file.filePath);
+    console.log(`  ${fullPath} — ${file.description}`);
   }
   console.log();
 
   // Confirm unless --yes
   if (!options.yes) {
     const confirmed = await p.confirm({
-      message: `Generate ${files.length} context files?`,
+      message: `Generate ${files.length} context file${files.length !== 1 ? "s" : ""}?`,
     });
     if (p.isCancel(confirmed) || !confirmed) {
       p.cancel("Cancelled");
@@ -568,26 +582,25 @@ async function cmdBridge(
   }
 
   const overwrite = options.yes
-    ? false
+    ? true
     : (await p.confirm({
         message: "Overwrite existing files?",
-        initialValue: false,
+        initialValue: isGlobal, // default true for global (update in place)
       })) === true;
 
-  const { written, skipped } = await writeBridgeFiles(
-    files,
-    process.cwd(),
-    overwrite,
-  );
+  const { written, skipped } = await writeBridgeFiles(files, outputRoot, overwrite);
 
   if (written.length > 0) {
-    showInfo(`Created: ${written.join(", ")}`);
+    showInfo(`Created: ${written.map((f) => path.join(outputRoot, f)).join(", ")}`);
   }
   if (skipped.length > 0) {
     showInfo(`Skipped (already exist): ${skipped.join(", ")}`);
   }
 
-  p.outro("Bridge files ready — each editor now reads .ai/");
+  const outro = isGlobal
+    ? "Global bridge ready — Claude Code will load it in every project automatically."
+    : "Bridge files ready — each editor now reads .ai/";
+  p.outro(outro);
 }
 
 /**
@@ -625,7 +638,7 @@ async function cmdRemove(
   const spinner = startSpinner(`Removing ${name}...`);
 
   let removed = 0;
-  for (const assistant of targetAssistants) {
+  for (const _assistant of targetAssistants) {
     const catalogItem: CatalogItem = {
       id: item.id,
       name: item.id,
@@ -735,20 +748,75 @@ async function cmdSearch(
  * Update command
  */
 async function cmdUpdate(
-  _args: string[],
+  args: string[],
   options: CliArgs["options"],
 ): Promise<void> {
   const scope: InstallScope = options.global ? "global" : "project";
-  const items = await getInstalledItems(scope);
+  const allInstalled = await getInstalledItems(scope);
 
-  if (items.length === 0) {
-    showInfo("No items installed");
+  if (allInstalled.length === 0) {
+    showInfo(`No items installed${scope === "global" ? " globally" : " in this project"}. Run \`personal-ai-skills add <name>\` first.`);
     return;
   }
 
-  showInfo(
-    `Found ${items.length} installed items. Update checking coming soon!`,
-  );
+  // Optional: filter to a specific item name
+  const filterName = args[0];
+  const toUpdate = filterName
+    ? allInstalled.filter((i) => i.id === filterName)
+    : allInstalled;
+
+  if (filterName && toUpdate.length === 0) {
+    showError(`"${filterName}" is not installed. Run \`personal-ai-skills list --installed\` to see installed items.`);
+    return;
+  }
+
+  // Load the full catalog to find updated templates
+  const catalog = await loadCatalog();
+
+  const s = startSpinner(`Updating ${toUpdate.length} item${toUpdate.length !== 1 ? "s" : ""}…`);
+
+  let updated = 0;
+  const notFound: string[] = [];
+  const failed: string[] = [];
+
+  for (const installed of toUpdate) {
+    const catalogItems = catalog.get(installed.type as ContentType) ?? [];
+    const catalogItem = catalogItems.find((i) => i.id === installed.id);
+
+    if (!catalogItem) {
+      // Custom/external install — can't update from builtin catalog
+      notFound.push(installed.id);
+      continue;
+    }
+
+    const result = await installItems(
+      [catalogItem],
+      [],
+      installed.scope as InstallScope,
+      installed.method as InstallMethod,
+    );
+
+    if (result.successful > 0) {
+      updated++;
+    } else {
+      failed.push(installed.id);
+    }
+  }
+
+  s.stop("Done");
+
+  if (updated > 0) {
+    p.log.success(`Updated ${updated} item${updated !== 1 ? "s" : ""} to latest version.`);
+  }
+  if (notFound.length > 0) {
+    showInfo(`Skipped (custom/external — not in builtin catalog): ${notFound.join(", ")}`);
+  }
+  if (failed.length > 0) {
+    showError(`Failed to update: ${failed.join(", ")}`);
+  }
+  if (updated === 0 && failed.length === 0 && notFound.length === 0) {
+    showInfo("Everything is already up to date.");
+  }
 }
 
 // ============================================================================

@@ -466,6 +466,15 @@ const categoryExplainers: Record<
       "Saves time on repetitive writing",
     ],
   },
+  integration: {
+    description:
+      "Integrations connect your AI assistant to external tools and systems — MCP servers, multi-agent frameworks, memory tools, and knowledge graphs.",
+    benefits: [
+      "Extends AI beyond the context window",
+      "Persistent memory across sessions",
+      "Real tool access (Excel, databases, APIs)",
+    ],
+  },
 };
 
 const assistants = [
