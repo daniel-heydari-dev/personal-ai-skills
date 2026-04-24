@@ -267,10 +267,12 @@ function buildMasterPrompt(wizard: WizardResult): string {
     const bridgeLabels: Record<string, string> = {
       claude: "CLAUDE.md (Claude Code)",
       cursor: ".cursor/rules (Cursor)",
-      vscode: ".vscode/settings.json (VS Code Copilot)",
+      vscode: ".vscode/settings.json (VS Code / Copilot)",
       copilot: "AGENTS.md + .github/copilot-instructions.md (GitHub Copilot)",
+      codex: "AGENTS.md (OpenAI Codex)",
       gemini: "GEMINI.md (Gemini CLI)",
       windsurf: ".windsurfrules (Windsurf)",
+      antigravity: ".antigravity/rules (Antigravity)",
     };
     lines.push("## Active Bridges", "");
     for (const id of wizard.bridgeIds) lines.push(`- ${bridgeLabels[id] ?? id}`);

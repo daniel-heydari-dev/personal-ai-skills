@@ -266,8 +266,8 @@ export interface WizardResult extends InstallOptions {
 export function getMemoryToolNextStep(tool: string, vaultPath: string): string | undefined {
   const steps: Record<string, string> = {
     obsidian: `git clone https://github.com/AgriciDaniel/claude-obsidian ${vaultPath}`,
-    "claude-mem": "npx claude-mem install",
-    graphify: "pip install graphifyy && graphify install",
+    "claude-mem": "pnpm dlx claude-mem install",
+    graphify: "pip3 install graphifyy && graphify install",
   };
   return steps[tool];
 }
