@@ -13,7 +13,7 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { AssistantConfig, ContentType } from "./types.js";
+import type { AssistantConfig, ContentType, CatalogItem } from "./types.js";
 import { CANONICAL_DIR } from "./agents.js";
 
 // ============================================================================
@@ -136,22 +136,37 @@ function buildCoreInstructions(dirs: string[]): string {
 // Editor-Specific Bridge Files
 // ============================================================================
 
-function claudeBridge(dirs: string[], vaultPath = "~/ai-brain"): BridgeFile {
-  const skillsLine = dirs.includes("skills")
-    ? "\n| React / TS components   | `.ai/skills/modern-react/`           |\n| API routes, REST        | `.ai/skills/api-design/`             |\n| Tests                   | `.ai/skills/testing-best-practices/` |"
+function buildSkillsMap(skills: CatalogItem[]): string {
+  if (skills.length === 0) return "";
+  const rows = skills.map((s) => `| ${s.name} | \`.ai/skills/${s.id}/\` |`).join("\n");
+  return `\n\n## 🗺️ Skills Map\n| Skill | Load |\n| --- | --- |\n${rows}`;
+}
+
+function buildAgentsMap(agents: CatalogItem[]): string {
+  if (agents.length === 0) return "";
+  const rows = agents.map((a) => `| ${a.name} | \`.ai/agents/${a.id}/\` |`).join("\n");
+  return `\n\n## 🗺️ Agents Map\n| Agent | Load |\n| --- | --- |\n${rows}`;
+}
+
+function claudeBridge(
+  dirs: string[],
+  vaultPath = "~/ai-brain",
+  installedItems?: CatalogItem[],
+): BridgeFile {
+  const installedSkills = installedItems?.filter((i) => i.type === "skills") ?? [];
+  const installedAgents = installedItems?.filter((i) => i.type === "agents") ?? [];
+
+  const skillsSection = dirs.includes("skills")
+    ? buildSkillsMap(installedSkills)
     : "";
-  const agentsLine = dirs.includes("agents")
-    ? "\n\n## 🗺️ Agents Map\n| Role requested          | Load                                 |\n| ----------------------- | ------------------------------------ |\n| Code review             | `.ai/agents/code-reviewer/`          |\n| Security audit          | `.ai/agents/security-auditor/`       |"
+  const agentsSection = dirs.includes("agents")
+    ? buildAgentsMap(installedAgents)
     : "";
   const rulesLine = dirs.includes("rules")
     ? "\n- Core rules: `.ai/rules/always.md` — always follow"
     : "";
   const commandsLine = dirs.includes("commands")
     ? "\n- Commands: `.ai/commands/` — load when user references a slash command"
-    : "";
-
-  const skillsSection = dirs.includes("skills")
-    ? `\n\n## 🗺️ Skills Map\n| When working on         | Load                                 |\n| ----------------------- | ------------------------------------ |${skillsLine}`
     : "";
 
   return {
@@ -175,7 +190,7 @@ function claudeBridge(dirs: string[], vaultPath = "~/ai-brain"): BridgeFile {
 | ------------------------ | ------------------------------------- | --------------------------------- |
 | auth, login, session     | auth, login, logout, JWT, password    | \`docs/spec/auth/SPEC.md\`        |
 | (add more rows below)    | (keywords)                            | \`docs/spec/<name>/SPEC.md\`      |
-${skillsSection}${agentsLine}${commandsLine}
+${skillsSection}${agentsSection}${commandsLine}
 
 ## 🗺️ Obsidian Map
 | Topic                    | Load                                                     |
@@ -345,6 +360,7 @@ export async function generateBridgeFiles(
   assistants: AssistantConfig[],
   projectRoot: string = process.cwd(),
   vaultPath?: string,
+  installedItems?: CatalogItem[],
 ): Promise<BridgeFile[]> {
   const dirs = await getExistingDirs(projectRoot);
   if (dirs.length === 0) {
@@ -362,6 +378,8 @@ export async function generateBridgeFiles(
   for (const key of bridgeKeys) {
     if (key === "vscode") {
       files.push(await vscodeBridge(dirs, projectRoot));
+    } else if (key === "claude") {
+      files.push(claudeBridge(dirs, vaultPath, installedItems));
     } else {
       const generator = BRIDGE_GENERATORS[key];
       if (generator) {
@@ -426,6 +444,7 @@ export async function generateBridgeFilesForIds(
   bridgeIds: string[],
   projectRoot: string = process.cwd(),
   vaultPath?: string,
+  installedItems?: CatalogItem[],
 ): Promise<BridgeFile[]> {
   if (bridgeIds.length === 0 || bridgeIds.includes("none")) {
     return [];
@@ -446,6 +465,8 @@ export async function generateBridgeFilesForIds(
   for (const key of keys) {
     if (key === "vscode") {
       files.push(await vscodeBridge(dirs, projectRoot));
+    } else if (key === "claude") {
+      files.push(claudeBridge(dirs, vaultPath, installedItems));
     } else {
       const generator = BRIDGE_GENERATORS[key];
       if (generator) {

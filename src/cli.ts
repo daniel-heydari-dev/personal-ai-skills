@@ -227,79 +227,81 @@ async function resolveBridgeIds(
 function buildMasterPrompt(wizard: WizardResult): string {
   const skills = wizard.items.filter((i) => i.type === "skills");
   const agents = wizard.items.filter((i) => i.type === "agents");
-  const integrations = wizard.items.filter((i) => i.type === "integration");
+  const project = wizard.projectSetup;
 
-  const lines: string[] = [
-    "# AI Skills Context",
-    "",
-    "Paste this into any AI assistant to activate your full setup.",
-    "",
-  ];
+  const sections: string[] = [];
 
-  if (wizard.obsidianVaultPath) {
-    lines.push("## Second Brain", "");
-    lines.push(`- **Vault**: \`${wizard.obsidianVaultPath}\``);
-    if (wizard.memoryTools.length > 0) {
-      lines.push(`- **Memory tools**: ${wizard.memoryTools.join(", ")}`);
+  // Opening instruction
+  const projectLabel = project ? `**${project.name}**` : "this project";
+  sections.push(
+    `You are my AI assistant for ${projectLabel}. My environment is fully configured — here is everything you need to know to help me effectively.`,
+  );
+
+  // Memory / second brain
+  if (wizard.memoryTools.length > 0) {
+    const memLines: string[] = [];
+    if (wizard.memoryTools.includes("obsidian")) {
+      memLines.push(
+        `- **Second brain vault**: \`${wizard.obsidianVaultPath}\` — my notes, research, and project wiki live here. When I mention "my notes", "the wiki", or "second brain", look here first.`,
+      );
     }
-    lines.push("");
+    if (wizard.memoryTools.includes("claude-mem")) {
+      memLines.push(
+        `- **Session memory (claude-mem)**: past session context is injected automatically. Use the \`search_memory\` MCP tool to find older decisions or conversations.`,
+      );
+    }
+    if (wizard.memoryTools.includes("graphify")) {
+      memLines.push(
+        `- **Knowledge graph (graphify)**: the codebase is mapped as a graph. Use it for large codebase exploration — up to 71× token reduction vs raw file reading.`,
+      );
+    }
+    sections.push(`## Memory & Second Brain\n\n${memLines.join("\n")}`);
   }
 
+  // Project context
+  if (project) {
+    sections.push(
+      `## Project\n\n- **Name**: ${project.name}\n- **Description**: ${project.description}\n- **Stack**: ${project.stack}\n- **Spec**: read \`SPEC.md\` for full architecture, constraints, and decisions.`,
+    );
+  }
+
+  // Skills
   if (skills.length > 0) {
-    lines.push("## Installed Skills", "");
-    for (const s of skills) lines.push(`- **${s.name}**: ${s.description}`);
-    lines.push("");
+    const rows = skills
+      .map((s) => `| **${s.name}** | ${s.description.split(".")[0]}. | \`.ai/skills/${s.id}/\` |`)
+      .join("\n");
+    sections.push(
+      `## Skills (active in \`.ai/skills/\`)\n\nApply these automatically when the topic matches:\n\n| Skill | When | File |\n| --- | --- | --- |\n${rows}`,
+    );
   }
 
+  // Agents
   if (agents.length > 0) {
-    lines.push("## Installed Agents", "");
-    for (const a of agents) lines.push(`- **${a.name}**: ${a.description}`);
-    lines.push("");
+    const rows = agents
+      .map((a) => `| **${a.name}** | ${a.description.split(".")[0]}. | \`.ai/agents/${a.id}/\` |`)
+      .join("\n");
+    sections.push(
+      `## Agents (in \`.ai/agents/\`)\n\nLoad the matching agent when I ask for deep specialised work:\n\n| Agent | Best for | File |\n| --- | --- | --- |\n${rows}`,
+    );
   }
 
-  if (integrations.length > 0) {
-    lines.push("## Integrations", "");
-    for (const i of integrations) lines.push(`- **${i.name}**: ${i.description}`);
-    lines.push("");
-  }
-
-  if (wizard.bridgeIds.length > 0) {
-    const bridgeLabels: Record<string, string> = {
-      claude: "CLAUDE.md (Claude Code)",
-      cursor: ".cursor/rules (Cursor)",
-      vscode: ".vscode/settings.json (VS Code / Copilot)",
-      copilot: "AGENTS.md + .github/copilot-instructions.md (GitHub Copilot)",
-      codex: "AGENTS.md (OpenAI Codex)",
-      gemini: "GEMINI.md (Gemini CLI)",
-      windsurf: ".windsurfrules (Windsurf)",
-      antigravity: ".antigravity/rules (Antigravity)",
-    };
-    lines.push("## Active Bridges", "");
-    for (const id of wizard.bridgeIds) lines.push(`- ${bridgeLabels[id] ?? id}`);
-    lines.push("");
-  }
-
-  if (wizard.projectSetup) {
-    lines.push("## Project Context", "");
-    lines.push(`- **Project**: ${wizard.projectSetup.name}`);
-    lines.push(`- **Description**: ${wizard.projectSetup.description}`);
-    lines.push(`- **Stack**: ${wizard.projectSetup.stack}`);
-    lines.push("");
-  }
-
-  lines.push("## Instructions for You", "");
-  lines.push("Apply the skills and agents above when relevant to my requests.");
+  // Instructions
+  const instructions: string[] = [
+    "1. **Always** read `CLAUDE.md` (this project's bridge file) at the start of each session.",
+    "2. Before writing code, check `.ai/skills/` for guidelines matching the current task.",
+    "3. For deep specialised tasks (code review, security audit, refactoring), load the relevant agent.",
+  ];
   if (wizard.memoryTools.includes("obsidian")) {
-    lines.push(`Reference my second brain at \`${wizard.obsidianVaultPath}\` for notes and context.`);
-  }
-  if (wizard.memoryTools.includes("graphify")) {
-    lines.push("Surface knowledge graph connections via graphify when answering complex questions.");
+    instructions.push(
+      `4. My second brain is at \`${wizard.obsidianVaultPath}\`. Reference it when I ask about past decisions, notes, or context.`,
+    );
   }
   if (wizard.memoryTools.includes("claude-mem")) {
-    lines.push("Persist important decisions using claude-mem session memory.");
+    instructions.push("5. Use `search_memory` when you need context from older sessions.");
   }
+  sections.push(`## How to Work With Me\n\n${instructions.join("\n")}`);
 
-  return lines.join("\n");
+  return sections.join("\n\n---\n\n");
 }
 
 // ============================================================================
@@ -434,6 +436,7 @@ async function cmdAdd(
         wizard.bridgeIds,
         projectRoot,
         wizard.obsidianVaultPath,
+        wizard.items,
       );
       if (files.length > 0) {
         const { written, skipped } = await writeBridgeFiles(files, projectRoot);
