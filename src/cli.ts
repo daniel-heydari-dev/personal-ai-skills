@@ -419,18 +419,7 @@ async function cmdAdd(
       handleInstallResult(result, spinner);
     }
 
-    // Scaffold SPEC.md + CLAUDE.md
-    if (wizard.projectSetup) {
-      const { specCreated, claudeCreated } = await scaffoldProjectSpec(
-        wizard.projectSetup,
-        wizard.obsidianVaultPath,
-        projectRoot,
-      );
-      if (specCreated) showInfo("Created SPEC.md — fill in your project details");
-      if (claudeCreated) showInfo(`Created CLAUDE.md — vault path set to ${wizard.obsidianVaultPath}`);
-    }
-
-    // Generate bridge files with vault path baked in
+    // Generate bridge files FIRST (writes CLAUDE.md with actual installed skills)
     if (wizard.bridgeIds.length > 0) {
       const files = await generateBridgeFilesForIds(
         wizard.bridgeIds,
@@ -443,6 +432,17 @@ async function cmdAdd(
         if (written.length > 0) showInfo(`Generated: ${written.join(", ")}`);
         if (skipped.length > 0) showInfo(`Skipped (already exist): ${skipped.join(", ")}`);
       }
+    }
+
+    // Scaffold SPEC.md (+ CLAUDE.md if bridge didn't already write it)
+    if (wizard.projectSetup) {
+      const { specCreated, claudeCreated } = await scaffoldProjectSpec(
+        wizard.projectSetup,
+        wizard.obsidianVaultPath,
+        projectRoot,
+      );
+      if (specCreated) showInfo("Created SPEC.md — fill in your project details");
+      if (claudeCreated) showInfo(`Created CLAUDE.md — vault path set to ${wizard.obsidianVaultPath}`);
     }
 
     // Run one-time memory tool setup commands using the actual vault path
@@ -469,6 +469,23 @@ async function cmdAdd(
             s.stop(`${tool} ✓`);
           } catch {
             s.stop(`${tool} failed — run manually: ${cmd}`);
+          }
+          // After obsidian setup (clone or pull), seed the basic vault structure
+          if (tool === "obsidian") {
+            const expandedPath = wizard.obsidianVaultPath.replace(/^~/, process.env["HOME"] ?? "~");
+            await fs.promises.mkdir(path.join(expandedPath, ".raw"), { recursive: true });
+            await fs.promises.mkdir(path.join(expandedPath, "wiki", "projects"), { recursive: true });
+            const hotPath = path.join(expandedPath, "wiki", "hot.md");
+            try {
+              await fs.promises.access(hotPath);
+            } catch {
+              await fs.promises.writeFile(
+                hotPath,
+                "# Session Cache\n\n<!-- Claude writes your most recent session summary here. Drop files in .raw/ to ingest them into the wiki. -->\n",
+                "utf-8",
+              );
+            }
+            showInfo(`Vault ready at: ${wizard.obsidianVaultPath}`);
           }
         }
       }

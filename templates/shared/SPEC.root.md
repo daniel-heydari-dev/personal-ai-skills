@@ -47,9 +47,9 @@
   Format: one short sentence each. No vague style preferences here.
 -->
 
-- {{RULE_1}}
-- {{RULE_2}}
-- {{RULE_3}}
+- [Add a non-negotiable invariant, e.g. "Always filter by orgId — never query without it"]
+- [e.g. "Currency is always cents (integer) — never floats"]
+- [e.g. "All dates stored and returned as UTC ISO-8601"]
 
 <!--
   EXAMPLES OF GOOD KEY RULES:
@@ -70,7 +70,7 @@
 
 | Topic               | Keywords to watch for                   | Load this file                     |
 | ------------------- | --------------------------------------- | ---------------------------------- |
-| {{TOPIC_1}}         | {{KEYWORDS_1}}                          | `docs/spec/{{AREA_1}}/SPEC.md`     |
+| auth, login, session | auth, login, logout, JWT, password     | `docs/spec/auth/SPEC.md`           |
 
 <!--
   EXAMPLE ROWS (add/remove as needed):

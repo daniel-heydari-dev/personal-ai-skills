@@ -31,8 +31,8 @@
 | Topic                    | Keywords to watch for              | Load this file                      |
 | ------------------------ | ---------------------------------- | ----------------------------------- |
 | auth, login, session     | auth, login, logout, JWT, password | `docs/spec/auth/SPEC.md`            |
-| {{AREA_2}}               | {{KEYWORDS_2}}                     | `docs/spec/{{AREA_2}}/SPEC.md`      |
-| {{AREA_3}}               | {{KEYWORDS_3}}                     | `docs/spec/{{AREA_3}}/SPEC.md`      |
+| billing, payments        | billing, stripe, invoice, plan     | `docs/spec/billing/SPEC.md`         |
+| dashboard, analytics     | dashboard, chart, metrics, graph   | `docs/spec/dashboard/SPEC.md`       |
 
 <!--
   HOW TO ADD A SPEC:
