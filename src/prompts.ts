@@ -263,13 +263,21 @@ export interface WizardResult extends InstallOptions {
   bridgeIds: string[];           // which bridge files to generate
 }
 
-const MEMORY_TOOL_NEXT_STEPS: Record<string, string> = {
+export function getMemoryToolNextStep(tool: string, vaultPath: string): string | undefined {
+  const steps: Record<string, string> = {
+    obsidian: `git clone https://github.com/AgriciDaniel/claude-obsidian ${vaultPath}`,
+    "claude-mem": "npx claude-mem install",
+    graphify: "pip install graphifyy && graphify install",
+  };
+  return steps[tool];
+}
+
+// Kept for backward compatibility — prefer getMemoryToolNextStep with actual vault path
+export const MEMORY_TOOL_NEXT_STEPS_MAP: Record<string, string> = {
   obsidian: "git clone https://github.com/AgriciDaniel/claude-obsidian ~/ai-brain",
   "claude-mem": "npx claude-mem install",
   graphify: "pip install graphifyy && graphify install",
 };
-
-export const MEMORY_TOOL_NEXT_STEPS_MAP = MEMORY_TOOL_NEXT_STEPS;
 
 // ============================================================================
 // Step 1 helpers

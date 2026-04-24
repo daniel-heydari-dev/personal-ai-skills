@@ -9,6 +9,7 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { execSync } from "node:child_process";
 import { parseArgs } from "node:util";
 import * as p from "@clack/prompts";
 import type {
@@ -38,13 +39,13 @@ import {
   selectMethod,
   selectBridges,
   ALL_BRIDGE_IDS,
-  MEMORY_TOOL_NEXT_STEPS_MAP,
+  getMemoryToolNextStep,
   showInstallSuccess,
   showError,
   showInfo,
   startSpinner,
 } from "./prompts.js";
-import type { ProjectSetup } from "./prompts.js";
+import type { ProjectSetup, WizardResult } from "./prompts.js";
 import { installItems, uninstallItem } from "./install.js";
 import { getInstalledItems, getInstalledItemsByType, getPreferences, savePreferences } from "./lock.js";
 import { fetchSkillFromSource } from "./github.js";
@@ -220,6 +221,86 @@ async function resolveBridgeIds(
 }
 
 // ============================================================================
+// Master Prompt Builder
+// ============================================================================
+
+function buildMasterPrompt(wizard: WizardResult): string {
+  const skills = wizard.items.filter((i) => i.type === "skills");
+  const agents = wizard.items.filter((i) => i.type === "agents");
+  const integrations = wizard.items.filter((i) => i.type === "integration");
+
+  const lines: string[] = [
+    "# AI Skills Context",
+    "",
+    "Paste this into any AI assistant to activate your full setup.",
+    "",
+  ];
+
+  if (wizard.obsidianVaultPath) {
+    lines.push("## Second Brain", "");
+    lines.push(`- **Vault**: \`${wizard.obsidianVaultPath}\``);
+    if (wizard.memoryTools.length > 0) {
+      lines.push(`- **Memory tools**: ${wizard.memoryTools.join(", ")}`);
+    }
+    lines.push("");
+  }
+
+  if (skills.length > 0) {
+    lines.push("## Installed Skills", "");
+    for (const s of skills) lines.push(`- **${s.name}**: ${s.description}`);
+    lines.push("");
+  }
+
+  if (agents.length > 0) {
+    lines.push("## Installed Agents", "");
+    for (const a of agents) lines.push(`- **${a.name}**: ${a.description}`);
+    lines.push("");
+  }
+
+  if (integrations.length > 0) {
+    lines.push("## Integrations", "");
+    for (const i of integrations) lines.push(`- **${i.name}**: ${i.description}`);
+    lines.push("");
+  }
+
+  if (wizard.bridgeIds.length > 0) {
+    const bridgeLabels: Record<string, string> = {
+      claude: "CLAUDE.md (Claude Code)",
+      cursor: ".cursor/rules (Cursor)",
+      vscode: ".vscode/settings.json (VS Code Copilot)",
+      copilot: "AGENTS.md + .github/copilot-instructions.md (GitHub Copilot)",
+      gemini: "GEMINI.md (Gemini CLI)",
+      windsurf: ".windsurfrules (Windsurf)",
+    };
+    lines.push("## Active Bridges", "");
+    for (const id of wizard.bridgeIds) lines.push(`- ${bridgeLabels[id] ?? id}`);
+    lines.push("");
+  }
+
+  if (wizard.projectSetup) {
+    lines.push("## Project Context", "");
+    lines.push(`- **Project**: ${wizard.projectSetup.name}`);
+    lines.push(`- **Description**: ${wizard.projectSetup.description}`);
+    lines.push(`- **Stack**: ${wizard.projectSetup.stack}`);
+    lines.push("");
+  }
+
+  lines.push("## Instructions for You", "");
+  lines.push("Apply the skills and agents above when relevant to my requests.");
+  if (wizard.memoryTools.includes("obsidian")) {
+    lines.push(`Reference my second brain at \`${wizard.obsidianVaultPath}\` for notes and context.`);
+  }
+  if (wizard.memoryTools.includes("graphify")) {
+    lines.push("Surface knowledge graph connections via graphify when answering complex questions.");
+  }
+  if (wizard.memoryTools.includes("claude-mem")) {
+    lines.push("Persist important decisions using claude-mem session memory.");
+  }
+
+  return lines.join("\n");
+}
+
+// ============================================================================
 // Commands
 // ============================================================================
 
@@ -359,20 +440,42 @@ async function cmdAdd(
       }
     }
 
-    // Show one-time setup commands for memory tools
-    const nextSteps = wizard.memoryTools
-      .map((tool) => MEMORY_TOOL_NEXT_STEPS_MAP[tool])
-      .filter(Boolean);
-    if (nextSteps.length > 0) {
+    // Run one-time memory tool setup commands using the actual vault path
+    const memoryCommands = wizard.memoryTools
+      .map((tool) => {
+        const cmd = getMemoryToolNextStep(tool, wizard.obsidianVaultPath);
+        return cmd ? { tool, cmd } : null;
+      })
+      .filter((x): x is { tool: string; cmd: string } => x !== null);
+
+    if (memoryCommands.length > 0) {
       showInfo(
-        `\n📋 One-time setup — run these to activate your memory tools:\n${
-          wizard.memoryTools
-            .filter((t) => MEMORY_TOOL_NEXT_STEPS_MAP[t])
-            .map((t) => `  ${t}: ${MEMORY_TOOL_NEXT_STEPS_MAP[t]}`)
-            .join("\n")
-        }`,
+        `\n📋 Memory tool setup:\n${memoryCommands.map((c) => `  ${c.tool}: ${c.cmd}`).join("\n")}`,
       );
+      const shouldRun = await p.confirm({
+        message: "Run these setup commands now?",
+        initialValue: true,
+      });
+      if (!p.isCancel(shouldRun) && shouldRun) {
+        for (const { tool, cmd } of memoryCommands) {
+          const s = startSpinner(`Setting up ${tool}…`);
+          try {
+            execSync(cmd, { stdio: "inherit", shell: process.env["SHELL"] ?? "/bin/sh" });
+            s.stop(`${tool} ✓`);
+          } catch {
+            s.stop(`${tool} failed — run manually: ${cmd}`);
+          }
+        }
+      }
     }
+
+    // Generate master AI context prompt and save it
+    const masterPrompt = buildMasterPrompt(wizard);
+    const aiDir = path.join(projectRoot, ".ai");
+    await fs.promises.mkdir(aiDir, { recursive: true });
+    const promptPath = path.join(aiDir, "AI-CONTEXT.md");
+    await fs.promises.writeFile(promptPath, masterPrompt, "utf-8");
+    showInfo(`\n✨ Master AI context saved to: .ai/AI-CONTEXT.md\n   Paste it into your AI assistant to connect all installed tools.\n\n${masterPrompt}`);
 
     return;
   }
