@@ -4,3 +4,11 @@ coverage/
 .DS_Store
 .vitest/
 .env
+
+
+//AI
+.ai/*
+AGENTS.md
+CLAUDE.md
+SPEC.md
+copilot-instructions.md

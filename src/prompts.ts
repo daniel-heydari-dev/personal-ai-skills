@@ -31,41 +31,47 @@ export type { InstallScope, InstallMethod, InstallOptions } from "./types.js";
 /**
  * Select content types to install (multi-select)
  */
-export async function selectContentTypes(): Promise<ContentType[] | symbol> {
+export async function selectContentTypes(excludeIntegrations = false): Promise<ContentType[] | symbol> {
+  const options = [
+    {
+      value: "skills" as ContentType,
+      label: "Skills",
+      hint: "Best practices and coding guidelines",
+    },
+    {
+      value: "agents" as ContentType,
+      label: "Agents",
+      hint: "Specialized AI personas for specific tasks",
+    },
+    {
+      value: "commands" as ContentType,
+      label: "Commands",
+      hint: "Reusable AI command templates",
+    },
+    {
+      value: "rules" as ContentType,
+      label: "Rules",
+      hint: "Code style and linting rules",
+    },
+    {
+      value: "prompts" as ContentType,
+      label: "Prompts",
+      hint: "Pre-built prompt templates",
+    },
+    ...(!excludeIntegrations
+      ? [
+          {
+            value: "integration" as ContentType,
+            label: "Integrations",
+            hint: "Obsidian, claude-mem, graphify — memory & knowledge tools",
+          },
+        ]
+      : []),
+  ];
+
   const contentTypes = await p.multiselect({
     message: "What do you want to install?",
-    options: [
-      {
-        value: "skills" as ContentType,
-        label: "Skills",
-        hint: "Best practices and coding guidelines",
-      },
-      {
-        value: "agents" as ContentType,
-        label: "Agents",
-        hint: "Specialized AI personas for specific tasks",
-      },
-      {
-        value: "commands" as ContentType,
-        label: "Commands",
-        hint: "Reusable AI command templates",
-      },
-      {
-        value: "rules" as ContentType,
-        label: "Rules",
-        hint: "Code style and linting rules",
-      },
-      {
-        value: "prompts" as ContentType,
-        label: "Prompts",
-        hint: "Pre-built prompt templates",
-      },
-      {
-        value: "integration" as ContentType,
-        label: "Integrations",
-        hint: "Obsidian, claude-mem, graphify — memory & knowledge tools",
-      },
-    ],
+    options,
     required: true,
   });
 
@@ -249,11 +255,14 @@ export async function confirmInstall(
 // Wizard Result Types
 // ============================================================================
 
+export type ProjectType = "app" | "library" | "service" | "cli" | "generic";
+
 export interface ProjectSetup {
   name: string;
   description: string;
   stack: string;
   slug: string;
+  type: ProjectType;
 }
 
 export interface WizardResult extends InstallOptions {
@@ -266,17 +275,16 @@ export interface WizardResult extends InstallOptions {
 export function getMemoryToolNextStep(tool: string, vaultPath: string): string | undefined {
   const steps: Record<string, string> = {
     obsidian: `git clone https://github.com/AgriciDaniel/claude-obsidian ${vaultPath}`,
-    "claude-mem": "pnpm dlx claude-mem install",
+    "claude-mem": "npx claude-mem install",
     graphify: "pip3 install graphifyy && graphify install",
   };
   return steps[tool];
 }
 
-// Kept for backward compatibility — prefer getMemoryToolNextStep with actual vault path
 export const MEMORY_TOOL_NEXT_STEPS_MAP: Record<string, string> = {
   obsidian: "git clone https://github.com/AgriciDaniel/claude-obsidian ~/ai-brain",
   "claude-mem": "npx claude-mem install",
-  graphify: "pip install graphifyy && graphify install",
+  graphify: "pip3 install graphifyy && graphify install",
 };
 
 // ============================================================================
@@ -303,16 +311,16 @@ export async function selectMemoryTools(): Promise<string[] | symbol> {
       {
         value: "obsidian",
         label: "claude-obsidian",
-        hint: "second brain — drop files in .raw/, Claude organises wiki/",
+        hint: "second brain vault — your notes, wiki, and project context live here",
       },
       {
         value: "claude-mem",
         label: "claude-mem",
-        hint: "session memory — ~10x token savings, runs automatically",
+        hint: "session memory — installs as a Claude Code hook, runs automatically",
       },
       {
         value: "graphify",
-        label: "graphify (optional)",
+        label: "graphify (optional, requires Python 3.10+)",
         hint: "knowledge graph — 71x token reduction for large codebases",
       },
     ],
@@ -352,6 +360,19 @@ export async function askProjectSetup(
   });
   if (p.isCancel(stack)) return stack;
 
+  const type = await p.select<ProjectType>({
+    message: "Project type? (drives the brain folder template)",
+    options: [
+      { value: "app", label: "app", hint: "full-stack / SaaS / web app" },
+      { value: "library", label: "library", hint: "component library / SDK / shared package" },
+      { value: "service", label: "service", hint: "backend service / API / microservice" },
+      { value: "cli", label: "cli", hint: "CLI tool / build tool / generator" },
+      { value: "generic", label: "generic", hint: "anything else (minimal scaffold)" },
+    ],
+    initialValue: "app",
+  });
+  if (p.isCancel(type)) return type;
+
   const slug = String(name)
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
@@ -362,6 +383,7 @@ export async function askProjectSetup(
     description: String(description),
     stack: String(stack),
     slug,
+    type: type as ProjectType,
   };
 }
 
@@ -397,7 +419,7 @@ export async function runInteractiveInstall(
   // ── Step 2: Content ──────────────────────────────────────────────────────
   p.log.step("Step 2 of 4 — Install Content");
 
-  const contentTypesResult = await selectContentTypes();
+  const contentTypesResult = await selectContentTypes(memoryTools.length > 0);
   if (p.isCancel(contentTypesResult)) { p.cancel("Cancelled"); return null; }
   const contentTypes = contentTypesResult as ContentType[];
 
@@ -519,16 +541,13 @@ export interface BridgeOption {
 
 const BRIDGE_OPTIONS: BridgeOption[] = [
   { value: "claude", label: "Claude Code", hint: "CLAUDE.md" },
-  { value: "cursor", label: "Cursor", hint: ".cursor/rules" },
-  { value: "vscode", label: "VS Code", hint: ".vscode/settings.json" },
-  {
-    value: "copilot",
-    label: "GitHub Copilot",
-    hint: "AGENTS.md + .github/copilot-instructions.md",
-  },
-  { value: "codex", label: "OpenAI Codex", hint: "AGENTS.md" },
-  { value: "gemini", label: "Gemini CLI", hint: "GEMINI.md" },
+  { value: "vscode", label: "Visual Studio Code", hint: ".vscode/settings.json" },
+  { value: "cursor", label: "Cursor", hint: ".cursor/rules/" },
+  { value: "webstorm", label: "WebStorm", hint: ".github/copilot-instructions.md" },
+  { value: "zed", label: "Zed", hint: ".zed/instructions.md" },
   { value: "windsurf", label: "Windsurf", hint: ".windsurfrules" },
+  { value: "neovim", label: "Neovim", hint: "AGENTS.md" },
+  { value: "gemini", label: "Gemini CLI", hint: "GEMINI.md" },
 ];
 
 /**
@@ -542,7 +561,7 @@ export const ALL_BRIDGE_IDS: string[] = BRIDGE_OPTIONS.map((o) => o.value);
  */
 export async function selectBridges(): Promise<string[] | symbol> {
   const result = await p.multiselect({
-    message: "Which AI assistants should get bridge files?",
+    message: "Which IDEs do you use?",
     options: BRIDGE_OPTIONS,
     required: false,
   });

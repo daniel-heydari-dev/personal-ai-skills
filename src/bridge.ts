@@ -42,6 +42,42 @@ export interface BridgeFile {
 // ============================================================================
 
 /**
+ * Scan `docs/spec/*&#47;SPEC.md` and return the names + first heading (used as topic).
+ * Empty list means the project has no sub-specs yet — caller should emit a comment-only example.
+ */
+async function getSubSpecs(
+  projectRoot: string,
+): Promise<{ name: string; topic: string }[]> {
+  const specRoot = path.join(projectRoot, "docs", "spec");
+  let entries: string[];
+  try {
+    entries = await fs.promises.readdir(specRoot);
+  } catch {
+    return [];
+  }
+  const found: { name: string; topic: string }[] = [];
+  for (const name of entries) {
+    const specPath = path.join(specRoot, name, "SPEC.md");
+    try {
+      const stat = await fs.promises.stat(specPath);
+      if (!stat.isFile()) continue;
+    } catch {
+      continue;
+    }
+    let topic = name;
+    try {
+      const raw = await fs.promises.readFile(specPath, "utf-8");
+      const heading = raw.match(/^#\s+(.+)$/m);
+      if (heading?.[1]) topic = heading[1].replace(/\s+—.*$/, "").trim();
+    } catch {
+      // ignore — fall back to the folder name
+    }
+    found.push({ name, topic });
+  }
+  return found;
+}
+
+/**
  * Get all content subdirectories that actually exist in .ai/
  */
 async function getExistingDirs(projectRoot: string): Promise<string[]> {
@@ -101,35 +137,36 @@ function getDirDescription(dir: string): string {
  * Build the core instructions block (shared across all editors)
  */
 function buildCoreInstructions(dirs: string[]): string {
-  const sections: string[] = [];
+  const sections: string[] = [
+    "Read `SPEC.md` for project facts, stack, and key invariants.",
+    "Load `docs/spec/<feature>/SPEC.md` when the user's task mentions that feature.",
+  ];
 
   if (dirs.includes("rules")) {
     sections.push(
-      "Before writing any code, read all files in `.ai/rules/`. These are hard constraints — never violate them.",
+      "Read all files in `.ai/rules/` first — hard constraints, never violate.",
     );
   }
 
   if (dirs.includes("skills")) {
     sections.push(
-      "When working on code, check `.ai/skills/` for relevant guidelines. Apply matching skill files to your work.",
+      "Load `.ai/skills/<name>/` when the topic matches.",
     );
   }
 
   if (dirs.includes("context")) {
     sections.push(
-      "For project context (architecture, conventions, domain), consult `.ai/context/`.",
+      "Project context (architecture, domain) lives in `.ai/context/`.",
     );
   }
 
   if (dirs.includes("commands")) {
     sections.push(
-      "Reusable command templates are in `.ai/commands/`. Use them when the user references a command by name.",
+      "Command templates in `.ai/commands/` — use when the user references one by name.",
     );
   }
 
-  if (sections.length === 0) return "";
-
-  return `\n## Instructions\n\n${sections.join("\n\n")}\n`;
+  return `\n## Instructions\n\n${sections.join("\n")}\n`;
 }
 
 // ============================================================================
@@ -148,60 +185,157 @@ function buildAgentsMap(agents: CatalogItem[]): string {
   return `\n\n## 🗺️ Agents Map\n| Agent | Load |\n| --- | --- |\n${rows}`;
 }
 
+function buildSpecMapBlock(subSpecs: { name: string; topic: string }[]): string {
+  if (subSpecs.length === 0) {
+    return `<!--
+  No sub-specs yet. When you scaffold one, a row will appear here.
+  Scaffold:  npx personal-ai-skills init spec <name>
+  Example:   npx personal-ai-skills init spec billing
+             → creates docs/spec/billing/SPEC.md
+             → re-run \`npx personal-ai-skills bridge\` to refresh this map
+
+  Example rows (delete this block once you have real sub-specs):
+  | auth, login       | auth, login, logout, JWT, session   | docs/spec/auth/SPEC.md      |
+  | billing, payments | billing, stripe, invoice, plan      | docs/spec/billing/SPEC.md   |
+  | dashboard         | dashboard, chart, metrics, report   | docs/spec/dashboard/SPEC.md |
+-->`;
+  }
+  const rows = subSpecs
+    .map((s) => `| ${s.topic} | ${s.name} | \`docs/spec/${s.name}/SPEC.md\` |`)
+    .join("\n");
+  return `| Topic | Keywords | Load |
+| --- | --- | --- |
+${rows}`;
+}
+
+/**
+ * Build the routing-map body shared by CLAUDE.md and AGENTS.md.
+ * Both files use identical maps — only the header/title differs.
+ *
+ * Uses Claude's `@path` import syntax for files Claude should treat as
+ * lazy-loaded references (https://code.claude.com/docs/en/memory#imports).
+ * Non-Claude editors read `@path` as a literal string pointer, so the same
+ * file works for Codex, Amp, OpenCode, Neovim, etc.
+ */
+function buildRoutingMaps(
+  dirs: string[],
+  vaultPath: string,
+  installedItems: CatalogItem[] | undefined,
+  projectSlug: string | undefined,
+  subSpecs: { name: string; topic: string }[],
+  memoryNote: string,
+): string {
+  const installedSkills = installedItems?.filter((i) => i.type === "skills") ?? [];
+  const installedAgents = installedItems?.filter((i) => i.type === "agents") ?? [];
+  const installedRules = installedItems?.filter((i) => i.type === "rules") ?? [];
+
+  const alwaysLoad = ["- Root spec: @SPEC.md"];
+  if (dirs.includes("rules")) {
+    alwaysLoad.push("- Always-on rules: @.ai/rules/always.md");
+    // Each installed rule lives in its own folder — import them explicitly so
+    // Claude's @-import lazy-loader picks them up. Without this, only
+    // always.md would be loaded and per-rule files (e.g. small-components)
+    // would sit unused on disk.
+    for (const rule of installedRules) {
+      alwaysLoad.push(`- @.ai/rules/${rule.id}/RULE.md`);
+    }
+  }
+  if (dirs.includes("commands")) alwaysLoad.push("- Slash commands: `.ai/commands/<name>/COMMAND.md` — load when the user references one by name");
+
+  const sections: string[] = [];
+  sections.push(`## ⚡ Always Load\n${alwaysLoad.join("\n")}`);
+  sections.push(`## 🗺️ Spec Map\n${buildSpecMapBlock(subSpecs)}`);
+  if (dirs.includes("skills") && installedSkills.length > 0) {
+    sections.push(buildSkillsMap(installedSkills).trim());
+  }
+  if (dirs.includes("agents") && installedAgents.length > 0) {
+    sections.push(buildAgentsMap(installedAgents).trim());
+  }
+
+  const slug = projectSlug ?? "<your-project-slug>";
+  const projectPath = `${vaultPath}/wiki/projects/${slug}`;
+  sections.push(`## 🗺️ Brain Map
+> Obsidian vault — load only when the user asks about past decisions, notes, or session history.
+
+| What | Load |
+| --- | --- |
+| Recent session cache | \`${vaultPath}/wiki/hot.md\` |
+| This project's notes | \`${projectPath}/\` |
+| Architecture decisions | \`${projectPath}/decisions.md\` |
+| Cross-project contracts | \`${vaultPath}/wiki/projects/shared/api-contracts.md\` |`);
+  sections.push(`## 🧠 Memory\n${memoryNote}`);
+
+  return sections.join("\n\n");
+}
+
+const HEADER_COMMENT = `<!--
+  Routing map. Loaded every session. Keep it THIN — every line should
+  pass the test: "would removing this cause a mistake?"
+
+  Anthropic best practices:  https://code.claude.com/docs/en/best-practices
+  Memory & imports:          https://code.claude.com/docs/en/memory
+  AGENTS.md spec:            https://agents.md/
+
+  THREE-TIER LOADING (token efficiency):
+    @SPEC.md                 ← always loaded (~150 tokens)
+    @docs/spec/<feature>/    ← on demand, when a keyword matches (~200 tokens)
+    .ai/skills/<name>/       ← on demand, when the topic matches
+
+  The @path syntax is a Claude-native lazy-load directive. Non-Claude editors
+  read it as a plain pointer — works in both worlds.
+-->`;
+
+const CLAUDE_MEMORY_NOTE = `- **claude-mem** auto-injects recent session context — don't repeat what's already there.
+- **\`search_memory\`** (MCP tool) — use for older sessions or specific past decisions.
+- **\`/graphify\`** — invoke for large-codebase navigation (up to 71× token reduction).`;
+
+const AGENTS_MEMORY_NOTE = `- Past session context is auto-injected when the editor supports it.
+- If no context appears, ask the user for it explicitly.
+- For large-codebase navigation, ask the user to run \`/graphify\` or \`graphify install\`.`;
+
 function claudeBridge(
   dirs: string[],
   vaultPath = "~/ai-brain",
   installedItems?: CatalogItem[],
+  projectSlug?: string,
+  subSpecs: { name: string; topic: string }[] = [],
 ): BridgeFile {
-  const installedSkills = installedItems?.filter((i) => i.type === "skills") ?? [];
-  const installedAgents = installedItems?.filter((i) => i.type === "agents") ?? [];
-
-  const skillsSection = dirs.includes("skills")
-    ? buildSkillsMap(installedSkills)
-    : "";
-  const agentsSection = dirs.includes("agents")
-    ? buildAgentsMap(installedAgents)
-    : "";
-  const rulesLine = dirs.includes("rules")
-    ? "\n- Core rules: `.ai/rules/always.md` — always follow"
-    : "";
-  const commandsLine = dirs.includes("commands")
-    ? "\n- Commands: `.ai/commands/` — load when user references a slash command"
-    : "";
-
+  const body = buildRoutingMaps(
+    dirs,
+    vaultPath,
+    installedItems,
+    projectSlug,
+    subSpecs,
+    CLAUDE_MEMORY_NOTE,
+  );
   return {
     editorId: "claude",
     filePath: "CLAUDE.md",
     description: "Claude Code context file (map pattern)",
-    content: `# CLAUDE.md
+    content: `# CLAUDE.md\n\n${HEADER_COMMENT}\n\n${body}\n`,
+  };
+}
 
-<!--
-  Entry point for every Claude session. Keep this file THIN — it is a MAP.
-  Target: under 100 tokens. Real content lives in the files it points to.
--->
-
-## ⚡ Always Load
-- Root spec: \`SPEC.md\` — what this project is, tech stack, key rules${rulesLine}
-
-## 🗺️ Spec Map
-> Load the matching sub-spec when the user mentions these topics.
-
-| Topic                    | Keywords                              | Load                              |
-| ------------------------ | ------------------------------------- | --------------------------------- |
-| auth, login, session     | auth, login, logout, JWT, password    | \`docs/spec/auth/SPEC.md\`        |
-| (add more rows below)    | (keywords)                            | \`docs/spec/<name>/SPEC.md\`      |
-${skillsSection}${agentsSection}${commandsLine}
-
-## 🗺️ Obsidian Map
-| Topic                    | Load                                                     |
-| ------------------------ | -------------------------------------------------------- |
-| Recent session context   | \`${vaultPath}/wiki/hot.md\`                             |
-| Architecture decisions   | \`${vaultPath}/wiki/projects/<slug>/decisions.md\`       |
-
-## 🧠 Memory
-claude-mem runs automatically — past session context is already injected.
-Use \`search_memory\` MCP tool if you need older context.
-`,
+function agentsBridge(
+  dirs: string[],
+  vaultPath = "~/ai-brain",
+  installedItems?: CatalogItem[],
+  projectSlug?: string,
+  subSpecs: { name: string; topic: string }[] = [],
+): BridgeFile {
+  const body = buildRoutingMaps(
+    dirs,
+    vaultPath,
+    installedItems,
+    projectSlug,
+    subSpecs,
+    AGENTS_MEMORY_NOTE,
+  );
+  return {
+    editorId: "universal",
+    filePath: "AGENTS.md",
+    description: "Universal agents context file (Codex, Amp, OpenCode, Neovim, etc.)",
+    content: `# AGENTS.md\n\n${HEADER_COMMENT}\n\n${body}\n`,
   };
 }
 
@@ -249,12 +383,22 @@ ${buildDirectorySection(dirs)}${buildCoreInstructions(dirs)}`,
   };
 }
 
-function agentsBridge(dirs: string[]): BridgeFile {
+function webstormBridge(dirs: string[]): BridgeFile {
   return {
-    editorId: "universal",
-    filePath: "AGENTS.md",
-    description: "Universal agents context file (Codex, Amp, OpenCode, etc.)",
-    content: `# AGENTS.md
+    editorId: "webstorm",
+    filePath: ".github/copilot-instructions.md",
+    description: "WebStorm — GitHub Copilot instructions (JetBrains reads .github/copilot-instructions.md)",
+    content: `# Copilot Instructions
+${buildDirectorySection(dirs)}${buildCoreInstructions(dirs)}`,
+  };
+}
+
+function zedBridge(dirs: string[]): BridgeFile {
+  return {
+    editorId: "zed",
+    filePath: ".zed/instructions.md",
+    description: "Zed AI instructions",
+    content: `# AI Instructions
 ${buildDirectorySection(dirs)}${buildCoreInstructions(dirs)}`,
   };
 }
@@ -317,13 +461,16 @@ async function vscodeBridge(
 
 /** All available bridge file generators, keyed by editor ID */
 const BRIDGE_GENERATORS: Record<string, (dirs: string[], vaultPath?: string) => BridgeFile> = {
-  claude: claudeBridge,
   cursor: cursorBridge,
   copilot: copilotBridge,
   gemini: geminiBridge,
   windsurf: windsurfBridge,
-  universal: agentsBridge,
+  webstorm: webstormBridge,
+  zed: zedBridge,
 };
+
+/** Bridge keys that need full routing context (subSpecs, installedItems, slug). */
+const ROUTING_BRIDGE_KEYS = new Set(["claude", "universal", "neovim"]);
 
 /** Map assistant IDs to bridge generator keys */
 const ASSISTANT_TO_BRIDGE: Record<string, string> = {
@@ -334,6 +481,9 @@ const ASSISTANT_TO_BRIDGE: Record<string, string> = {
   gemini: "gemini",
   antigravity: "gemini",
   windsurf: "windsurf",
+  webstorm: "webstorm",
+  zed: "zed",
+  neovim: "neovim",
   codex: "universal",
   amp: "universal",
   opencode: "universal",
@@ -361,11 +511,13 @@ export async function generateBridgeFiles(
   projectRoot: string = process.cwd(),
   vaultPath?: string,
   installedItems?: CatalogItem[],
+  projectSlug?: string,
 ): Promise<BridgeFile[]> {
   const dirs = await getExistingDirs(projectRoot);
   if (dirs.length === 0) {
     dirs.push("skills", "rules");
   }
+  const subSpecs = await getSubSpecs(projectRoot);
 
   const bridgeKeys = new Set<string>();
   for (const assistant of assistants) {
@@ -375,16 +527,22 @@ export async function generateBridgeFiles(
   bridgeKeys.add("universal");
 
   const files: BridgeFile[] = [];
+  const seenPaths = new Set<string>();
   for (const key of bridgeKeys) {
+    let file: BridgeFile | undefined;
     if (key === "vscode") {
-      files.push(await vscodeBridge(dirs, projectRoot));
+      file = await vscodeBridge(dirs, projectRoot);
     } else if (key === "claude") {
-      files.push(claudeBridge(dirs, vaultPath, installedItems));
+      file = claudeBridge(dirs, vaultPath, installedItems, projectSlug, subSpecs);
+    } else if (key === "universal" || key === "neovim") {
+      file = agentsBridge(dirs, vaultPath, installedItems, projectSlug, subSpecs);
     } else {
       const generator = BRIDGE_GENERATORS[key];
-      if (generator) {
-        files.push(generator(dirs, vaultPath));
-      }
+      if (generator) file = generator(dirs, vaultPath);
+    }
+    if (file && !seenPaths.has(file.filePath)) {
+      seenPaths.add(file.filePath);
+      files.push(file);
     }
   }
 
@@ -430,7 +588,11 @@ export async function writeBridgeFiles(
  * Get all available bridge file types
  */
 export function getAvailableBridgeTypes(): string[] {
-  return [...Object.keys(BRIDGE_GENERATORS), "vscode"];
+  return [
+    ...Object.keys(BRIDGE_GENERATORS),
+    ...ROUTING_BRIDGE_KEYS,
+    "vscode",
+  ];
 }
 
 /**
@@ -445,6 +607,7 @@ export async function generateBridgeFilesForIds(
   projectRoot: string = process.cwd(),
   vaultPath?: string,
   installedItems?: CatalogItem[],
+  projectSlug?: string,
 ): Promise<BridgeFile[]> {
   if (bridgeIds.length === 0 || bridgeIds.includes("none")) {
     return [];
@@ -454,6 +617,7 @@ export async function generateBridgeFilesForIds(
   if (dirs.length === 0) {
     dirs.push("skills", "rules");
   }
+  const subSpecs = await getSubSpecs(projectRoot);
 
   const resolveKey = (id: string): string => ASSISTANT_TO_BRIDGE[id] ?? id;
 
@@ -462,16 +626,22 @@ export async function generateBridgeFilesForIds(
     : new Set(bridgeIds.map(resolveKey));
 
   const files: BridgeFile[] = [];
+  const seenPaths = new Set<string>();
   for (const key of keys) {
+    let file: BridgeFile | undefined;
     if (key === "vscode") {
-      files.push(await vscodeBridge(dirs, projectRoot));
+      file = await vscodeBridge(dirs, projectRoot);
     } else if (key === "claude") {
-      files.push(claudeBridge(dirs, vaultPath, installedItems));
+      file = claudeBridge(dirs, vaultPath, installedItems, projectSlug, subSpecs);
+    } else if (key === "universal" || key === "neovim") {
+      file = agentsBridge(dirs, vaultPath, installedItems, projectSlug, subSpecs);
     } else {
       const generator = BRIDGE_GENERATORS[key];
-      if (generator) {
-        files.push(generator(dirs, vaultPath));
-      }
+      if (generator) file = generator(dirs, vaultPath);
+    }
+    if (file && !seenPaths.has(file.filePath)) {
+      seenPaths.add(file.filePath);
+      files.push(file);
     }
   }
 

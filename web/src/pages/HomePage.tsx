@@ -10,15 +10,15 @@ import {
 import styles from "./HomePage.module.css";
 
 const supportedAssistants = [
-  { name: "Claude", icon: "🟣" },
+  { name: "Claude Code", icon: "🟣" },
+  { name: "Visual Studio Code", icon: "💙" },
   { name: "Cursor", icon: "⚡" },
+  { name: "WebStorm", icon: "🌪️" },
+  { name: "Zed", icon: "🚀" },
   { name: "Windsurf", icon: "🌊" },
+  { name: "Neovim", icon: "🟢" },
   { name: "GitHub Copilot", icon: "🐙" },
   { name: "Gemini CLI", icon: "💎" },
-  { name: "Amp", icon: "🔋" },
-  { name: "OpenAI Codex", icon: "🤖" },
-  { name: "Kiro", icon: "🔮" },
-  { name: "Trae", icon: "🎯" },
 ];
 
 const stats = [

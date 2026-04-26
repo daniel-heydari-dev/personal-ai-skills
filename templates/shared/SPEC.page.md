@@ -152,3 +152,16 @@ export interface {{ENTITY_NAME}} {
 -->
 
 - [ ] {{OPEN_QUESTION_1}}
+
+<!--
+## Further reading (Tier 4 — uncomment when this spec gets dense)
+
+> Load ONLY when the user explicitly asks for history / background / why-decisions.
+> Keeps Tier 2 lean. When this file grows past ~300 tokens of historical notes,
+> move them to the brain and replace with the pointers below.
+
+- Brain: `~/ai-brain/wiki/projects/{{PROJECT_SLUG}}/{{PAGE_NAME}}-history.md`
+- Decisions: `~/ai-brain/wiki/projects/{{PROJECT_SLUG}}/decisions.md`
+- Cross-project contracts: `~/ai-brain/wiki/projects/shared/api-contracts.md`
+-->
+

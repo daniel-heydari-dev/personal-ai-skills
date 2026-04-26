@@ -20,15 +20,16 @@ function makeTempDir(): string {
 }
 
 describe("ALL_BRIDGE_IDS", () => {
-  it("includes all 7 expected bridge types", () => {
+  it("includes all 8 expected bridge types", () => {
     expect(ALL_BRIDGE_IDS).toContain("claude");
-    expect(ALL_BRIDGE_IDS).toContain("cursor");
     expect(ALL_BRIDGE_IDS).toContain("vscode");
-    expect(ALL_BRIDGE_IDS).toContain("copilot");
-    expect(ALL_BRIDGE_IDS).toContain("codex");
-    expect(ALL_BRIDGE_IDS).toContain("gemini");
+    expect(ALL_BRIDGE_IDS).toContain("cursor");
+    expect(ALL_BRIDGE_IDS).toContain("webstorm");
+    expect(ALL_BRIDGE_IDS).toContain("zed");
     expect(ALL_BRIDGE_IDS).toContain("windsurf");
-    expect(ALL_BRIDGE_IDS).toHaveLength(7);
+    expect(ALL_BRIDGE_IDS).toContain("neovim");
+    expect(ALL_BRIDGE_IDS).toContain("gemini");
+    expect(ALL_BRIDGE_IDS).toHaveLength(8);
   });
 });
 

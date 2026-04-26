@@ -1,51 +1,57 @@
-# Agent Instructions
+# {{PROJECT_NAME}}
 
-## Project Summary
+<!--
+  Routing map for non-Claude AI assistants (Codex, Amp, OpenCode, Neovim, Cursor, ...).
+  Loaded every session. Keep it THIN — every line should pass the test:
+  "would removing this cause the AI to make a mistake?"
 
-{{projectDescription}}
+  AGENTS.md spec:           https://agents.md/  (open standard, Linux Foundation)
+  Mirrors CLAUDE.md so Claude Code and other agents read the same routing.
+-->
 
-## Stack
+## ⚡ Always Load
 
-{{stack}}
+- Root spec: `SPEC.md`
+- Always-on rules: `.ai/rules/always.md` (add if present)
 
-## Conventions
+## 🗺️ Spec Map
 
-- Prefer TypeScript for new or changed code.
-- Keep components functional and hook-based; follow the Rules of Hooks.
-- Respect existing file/feature structure; ask before reorganizing.
-- Keep diffs focused; avoid drive-by refactors.
-- Avoid adding new dependencies without explicit approval.
-- Write tests for new features and bug fixes.
-- Document public APIs with JSDoc comments.
+> Load the matching sub-spec when the user's task mentions these keywords.
+> Scaffold a new one with: `npx personal-ai-skills init spec <name>`
 
-## Workflow
+| Topic | Keywords | Load |
+| --- | --- | --- |
+| auth | auth, login, logout, JWT, session | `docs/spec/auth/SPEC.md` |
+| billing | billing, stripe, invoice, plan | `docs/spec/billing/SPEC.md` |
+| dashboard | dashboard, chart, metrics | `docs/spec/dashboard/SPEC.md` |
 
-- Confirm assumptions before making broad changes.
-- Keep UI changes aligned with existing design tokens or theme.
-- Update or add tests when behavior changes.
-- Run linter and formatter before committing.
+## 🗺️ Skills
 
-## Testing
+Skills live in `.ai/skills/<name>/SKILL.md`. Match by topic and load only the matching ones.
 
-- Dev: `{{devCommand}}`
-- Build: `{{buildCommand}}`
-- Test: `{{testCommand}}`
-- Lint: `{{lintCommand}}`
+## 🗺️ Agents
 
-## Do / Don't
+Agents live in `.ai/agents/<name>/AGENT.md`. Load only when the user explicitly requests that role.
 
-Do:
+## 🗺️ Brain Map
 
-- Follow existing patterns and conventions in the codebase.
-- Write self-documenting code with clear naming.
-- Handle errors gracefully with proper error messages.
-- Use environment variables for configuration.
-- Keep functions small and focused (single responsibility).
+> Obsidian vault — load only when the user asks about past decisions, notes, or session history.
 
-Don't:
+| What | Load |
+| --- | --- |
+| Recent session cache | `~/ai-brain/wiki/hot.md` |
+| This project's notes | `~/ai-brain/wiki/projects/{{PROJECT_SLUG}}/` |
+| Architecture decisions | `~/ai-brain/wiki/projects/{{PROJECT_SLUG}}/decisions.md` |
+| Cross-project contracts | `~/ai-brain/wiki/projects/shared/api-contracts.md` |
 
-- Bypass validation or auth flows.
-- Introduce new dependencies without discussion.
-- Leave console.log statements in production code.
-- Commit secrets or sensitive data.
-- Ignore TypeScript errors with `@ts-ignore`.
+## 🧠 Memory
+
+- Past session context is auto-injected when the editor supports it.
+- If no context appears, ask the user for it explicitly.
+- For large-codebase navigation, ask the user to run `/graphify` or `graphify install`.
+
+## Commands
+
+- Dev: {{devCommand}}
+- Build: {{buildCommand}}
+- Test: {{testCommand}}

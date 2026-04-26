@@ -1,107 +1,70 @@
 # {{PROJECT_NAME}}
 
 <!--
-  CLAUDE.md — the entry point for every AI session.
-  This file is auto-loaded. Keep it THIN — it is a MAP, not a manual.
-  Target: under 100 tokens. The real content lives in the files it points to.
+  ⚠️ This is the initial scaffold. Run `personal-ai-skills bridge` to refresh
+  with your real installed skills/agents/sub-specs.
 
-  HOW IT WORKS:
-    1. Claude loads this file automatically on every message.
-    2. It reads SPEC.md (always — ~150 tokens).
-    3. When you mention a feature (e.g. "working on auth"), Claude reads
-       the matching row from Spec Map and loads that sub-spec (~200 tokens).
-    4. Total context loaded: ~350–500 tokens. Not 6,000.
+  Routing map. Loaded every session. Keep it THIN — every line should
+  pass the test: "would removing this cause the AI to make a mistake?"
 
-  DO NOT put coding rules here. Put them in .ai/rules/ or SPEC.md.
-  DO NOT put skill content here. It lives in .ai/skills/.
-  DO update the maps below whenever you add specs, skills, or agents.
+  Anthropic best practices:  https://code.claude.com/docs/en/best-practices
+  Memory & imports:          https://code.claude.com/docs/en/memory
+  AGENTS.md spec:            https://agents.md/
+
+  FOUR-TIER LOADING (token efficiency):
+    @SPEC.md                          ← Tier 1: always loaded (~150 tokens)
+    @docs/spec/<feature>/SPEC.md      ← Tier 2: on keyword match (~200 tokens)
+    .ai/skills/<name>/SKILL.md        ← Tier 3: on topic match
+    ~/ai-brain/wiki/projects/<slug>/  ← Tier 4: on explicit ask only (deep history)
+
+  The @path syntax is a Claude-native lazy-load directive. Non-Claude editors
+  read it as a plain pointer — works in both worlds.
 -->
 
 ## ⚡ Always Load
 
-- Root spec: `SPEC.md` — what the app is, tech stack, key rules
-- Core rules: `.ai/rules/always.md` — coding standards (add if present)
-
----
+- Root spec: @SPEC.md
+- Always-on rules: @.ai/rules/always.md (add if present)
 
 ## 🗺️ Spec Map
 
-> Load the matching spec when the user's task mentions these keywords.
-
-| Topic                    | Keywords to watch for              | Load this file                      |
-| ------------------------ | ---------------------------------- | ----------------------------------- |
-| auth, login, session     | auth, login, logout, JWT, password | `docs/spec/auth/SPEC.md`            |
-| billing, payments        | billing, stripe, invoice, plan     | `docs/spec/billing/SPEC.md`         |
-| dashboard, analytics     | dashboard, chart, metrics, graph   | `docs/spec/dashboard/SPEC.md`       |
+> Load the matching sub-spec when the user's task mentions these keywords.
+> Scaffold a new one with: `npx personal-ai-skills init spec <name>`
 
 <!--
-  HOW TO ADD A SPEC:
-    Run: npx personal-ai-skills init spec <name>
-    Example: npx personal-ai-skills init spec billing
-    → Creates docs/spec/billing/SPEC.md
-    → Adds a row to SPEC.md Spec Map (and you add it here too)
+  EXAMPLE rows — uncomment after you've actually scaffolded these specs.
+  Or just run `npx personal-ai-skills init spec <name>` and re-run `bridge` —
+  the table will rebuild itself with your real sub-specs.
 
-  GOOD KEYWORDS:
-    auth      → auth, login, logout, session, JWT, password, OAuth
-    billing   → billing, stripe, subscription, invoice, plan, payment
-    inventory → inventory, stock, SKU, warehouse, location, quantity
-    dashboard → dashboard, charts, analytics, metrics, graph
-    api       → api, route, endpoint, REST, response, request
+  | Topic     | Keywords                          | Load                         |
+  | --------- | --------------------------------- | ---------------------------- |
+  | auth      | auth, login, logout, JWT, session | @docs/spec/auth/SPEC.md      |
+  | billing   | billing, stripe, invoice, plan    | @docs/spec/billing/SPEC.md   |
+  | dashboard | dashboard, chart, metrics         | @docs/spec/dashboard/SPEC.md |
 -->
 
----
+## 🗺️ Skills
 
-## 🗺️ Skills Map
+Skills live in `.ai/skills/<name>/SKILL.md`. Match by topic and load only the matching ones.
 
-> Load the matching skill when the task involves this technology or task type.
+## 🗺️ Agents
 
-| When the user is working on         | Load this skill                         |
-| ----------------------------------- | --------------------------------------- |
-| React components, hooks, state      | `.ai/skills/modern-react/`              |
-| API routes, REST endpoints          | `.ai/skills/api-design/`                |
-| TypeScript types, generics          | `.ai/skills/clean-typescript/`          |
-| Tests, test coverage                | `.ai/skills/testing-best-practices/`    |
-| Git, commits, PRs                   | `.ai/skills/git-workflow/`              |
-| Security review, auth checks        | `.ai/agents/security-auditor/`          |
-| Code review requested               | `.ai/agents/code-reviewer/`             |
+Agents live in `.ai/agents/<name>/AGENT.md`. Load only when the user explicitly requests that role.
 
-<!--
-  HOW TO INSTALL SKILLS:
-    npx personal-ai-skills                       ← interactive wizard
-    npx personal-ai-skills add modern-react      ← install a specific skill
-    npx personal-ai-skills add api-design
+## 🗺️ Brain Map
 
-  Skills install to .ai/skills/<name>/SKILL.md
-  You control which ones exist — only list them here if installed.
--->
+> Obsidian vault (Tier 4) — load only when the user asks about past decisions, history, or background.
+> Plain backticks (no `@`) so the vault doesn't auto-load on every session.
 
----
+| What | Load |
+| --- | --- |
+| Recent session cache | `~/ai-brain/wiki/hot.md` |
+| This project's notes | `~/ai-brain/wiki/projects/{{PROJECT_SLUG}}/` |
+| Architecture decisions | `~/ai-brain/wiki/projects/{{PROJECT_SLUG}}/decisions.md` |
+| Cross-project contracts | `~/ai-brain/wiki/projects/shared/api-contracts.md` |
 
-## 🗺️ Obsidian Map
+## 🧠 Memory
 
-> Load from the second brain only when the user explicitly asks about past decisions or context.
-> Never auto-load the whole vault — it's massive.
-
-| Topic                                  | Load this file                                               |
-| -------------------------------------- | ------------------------------------------------------------ |
-| Architecture decisions, why we chose X | `~/ai-brain/wiki/projects/{{PROJECT_SLUG}}/decisions.md`     |
-| Past auth or security work             | `~/ai-brain/wiki/projects/{{PROJECT_SLUG}}/auth.md`          |
-| Session context (most recent work)     | `~/ai-brain/wiki/hot.md`                                     |
-
-<!--
-  OBSIDIAN VAULT PATH: ~/ai-brain/
-  If your vault is at a different path, update every reference above.
-
-  HOW TO USE:
-    - Drop any file into ~/ai-brain/.raw/ and Claude extracts + organises it.
-    - wiki/hot.md is the always-current session cache — read it first.
-    - wiki/projects/{{PROJECT_SLUG}}/ holds notes specific to THIS project.
-    - Never tell Claude to "read the whole vault" — always reference specific files.
--->
-
----
-
-## 🧠 Memory (claude-mem)
-
-claude-mem runs automatically — past session context is already injected at the top of this conversation.
-Do not repeat context that is already present. Use `search_memory` MCP tool if you need older context.
+- **claude-mem** auto-injects recent session context — don't repeat what's already there.
+- **`search_memory`** (MCP tool) — use for older sessions or specific past decisions.
+- **`/graphify`** — invoke for large-codebase navigation (up to 71× token reduction).

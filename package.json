@@ -57,6 +57,7 @@
     "build:web": "cd web && pnpm run build",
     "build:all": "pnpm run build && pnpm run build:web",
     "dev": "tsx src/cli.ts",
+    "start": "pnpm build && node dist/cli.js",
     "dev:web": "cd web && pnpm run dev",
     "test": "vitest run",
     "test:watch": "vitest",

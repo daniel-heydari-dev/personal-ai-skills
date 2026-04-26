@@ -6,6 +6,12 @@
   Its job: tell the AI what the app is, what stack it uses,
   and what rules are non-negotiable. Nothing more.
 
+  FOUR-TIER LOADING (where this file fits):
+    Tier 1: SPEC.md (this file)            ← always loaded, ~150 tokens
+    Tier 2: docs/spec/<feature>/SPEC.md    ← loaded on keyword match
+    Tier 3: .ai/skills/<name>/SKILL.md     ← loaded on topic match
+    Tier 4: ~/ai-brain/wiki/projects/...   ← loaded only on explicit ask
+
   FILLING IN THIS FILE:
     - "What it is"  → 2–3 sentences max. What problem does it solve? Who uses it?
     - "Stack"       → list every major technology. Be specific (Next.js 15, not "React").
@@ -16,6 +22,7 @@
                       Good rule: "all dates stored and returned as UTC ISO-8601"
     - "Spec Map"    → auto-updated by `npx personal-ai-skills init spec <name>`
                       Add keywords so Claude knows WHEN to load each sub-spec.
+                      When a spec gets too dense → move history to Tier 4 (brain).
 -->
 
 ## What it is

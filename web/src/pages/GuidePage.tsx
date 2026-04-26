@@ -67,73 +67,78 @@ Include sections for:
   },
   {
     num: 3,
-    title: "Install Skills & Integrations",
+    title: "Install Skills & Memory Tools",
     icon: "⚡",
     color: "#e879f9",
-    desc: "Install skill files that teach your AI best practices for your tech stack — DO/DON'T rules, code patterns, and real examples. Also install memory integrations (Obsidian, claude-mem, graphify) once here.",
+    desc: "Run the interactive wizard — it walks you through 4 steps: memory stack, content to install, project setup, and bridge files. At the end it generates a prompt you paste into your AI assistant.",
     details: [
-      "Skills are SKILL.md files: structured DO/DON'T rules + code examples",
-      "AI reads them automatically and applies best practices to every response",
-      "npx personal-ai-skills  →  interactive wizard (picks type, items, scope)",
-      "npx personal-ai-skills add clean-code  →  install a specific skill directly",
+      "Step 1 — Memory Stack: vault path + claude-mem + graphify (optional, needs Python 3.10+)",
+      "Step 2 — Content: pick skills, agents, rules to install into .ai/",
+      "Step 3 — Project setup: name, description, tech stack → creates SPEC.md",
+      "Step 4 — Bridge files: which IDEs you use → generates CLAUDE.md, .cursor/rules, etc.",
     ],
-    prompt: `# Interactive wizard — first question is your Obsidian vault path
-npx personal-ai-skills
-# ? Where is your Obsidian vault (ai-brain)?  ~/ai-brain
-# ? What to install?  Skills / Agents / Integrations / ...
-# ? Which items?      (multi-select)
-# ? Which editors?    Claude / Cursor / VS Code / ...
+    prompt: `npx personal-ai-skills
 
-# Or install specific items directly:
-npx personal-ai-skills add clean-code
-npx personal-ai-skills add modern-react
-npx personal-ai-skills add testing-best-practices
+# Step 1 of 4 — Memory Stack
+# ◇  Where is your Obsidian vault (second brain)?
+# │  ~/ai-brain
+# ◇  Set up memory tools (select any — or press Enter to skip):
+# │  ◼ claude-obsidian   second brain vault — notes, wiki, project context
+# │  ◼ claude-mem        session memory — installs as a Claude Code hook
+# │  ◻ graphify (optional, requires Python 3.10+)
 
-# Install memory stack integrations (one-time — shows "Next step:" after each)
-npx personal-ai-skills add obsidian --type integration
-# Next step: git clone https://github.com/AgriciDaniel/claude-obsidian ~/ai-brain
+# Step 2 of 4 — Install Content
+# ◇  What do you want to install?
+# │  ◼ Skills   ◼ Agents   ◻ Commands   ◻ Rules   ◻ Prompts
 
-npx personal-ai-skills add claude-mem --type integration
-# Next step: npx claude-mem install
+# Step 3 of 4 — Project Setup
+# ◇  Project name?   my-app
+# ◇  One-line description?   ...
+# ◇  Tech stack?   TypeScript, Node.js, React
 
-npx personal-ai-skills add graphify --type integration
-# Next step: pip install graphifyy && graphify install`,
-    promptLabel: "Install workflow",
+# Step 4 of 4 — Bridge Files
+# ◇  Which IDEs do you use?
+# │  ◼ Claude Code   ◼ Visual Studio Code   ◻ Cursor   ◻ Windsurf
+
+# ✅ Setup complete!
+# 📄 AI context saved to: .ai/AI-CONTEXT.md
+# 👇 Paste the generated prompt into your AI assistant to connect everything`,
+    promptLabel: "4-step interactive wizard",
   },
   {
     num: 4,
     title: "Configure Your AI (map pattern)",
     icon: "⚙️",
     color: "#34d399",
-    desc: "Generate bridge files for each AI tool you use. CLAUDE.md acts as a MAP — a tiny index under 200 tokens that tells the AI where files live, not what's in them. VS Code bridge merges into settings.json without overwriting.",
+    desc: "The wizard generates CLAUDE.md as a MAP — a tiny index under 200 tokens. The AI loads only what it needs per task. VS Code bridge merges Copilot settings without overwriting your existing config.",
     details: [
-      "npx personal-ai-skills bridge  →  interactive bridge selection",
-      "--bridges claude,vscode  →  target specific editors only",
+      "npx personal-ai-skills bridge  →  regenerate bridge files any time",
+      "--bridges claude,vscode  →  specific editors only",
       "--bridges none  →  skip bridge generation entirely",
       "VS Code bridge merges Copilot keys into .vscode/settings.json safely",
     ],
-    prompt: `# Generated CLAUDE.md (map pattern — < 200 tokens)
+    prompt: `# Generated CLAUDE.md (map pattern — < 200 tokens always-load)
 # ─────────────────────────────────────────────
 
-## ⚡ ALWAYS LOAD
-- Root spec: SPEC.md
-- Rules: .ai/rules/  — always follow
+## ⚡ Always Load
+- Root spec: SPEC.md — what this project is, stack, key rules
 
-## 🗺️ REFERENCE MAP (load only when relevant)
-- Skills:    .ai/skills/      — load by file type
-- Agents:    .ai/agents/      — load when role requested
-- Sub-specs: docs/spec/*/SPEC.md — load when feature mentioned
-- Obsidian:  ~/ai-brain/wiki/hot.md
+## 🗺️ Skills Map  (load only when relevant)
+| Skill | Load |
+| --- | --- |
+| Node.js, CLI | .ai/skills/node-backend/ |
+| TypeScript   | .ai/skills/clean-typescript/ |
+| Testing      | .ai/skills/testing-best-practices/ |
 
-# Interactive bridge selection
-npx personal-ai-skills bridge
-# ◯ Claude Code    → CLAUDE.md
-# ◯ Cursor         → .cursor/rules/
-# ◯ VS Code        → .vscode/settings.json  (JSON merge)
-# ◯ GitHub Copilot → AGENTS.md
-# ◯ Gemini CLI     → GEMINI.md
-# ◯ Windsurf       → .windsurfrules`,
-    promptLabel: "Map-pattern bridge generation",
+## 🗺️ Agents Map
+| Agent | Load |
+| --- | --- |
+| code-reviewer  | .ai/agents/code-reviewer/ |
+| refactor-expert | .ai/agents/refactor-expert/ |
+
+## 🧠 Memory
+claude-mem runs automatically — past session context already injected.`,
+    promptLabel: "Generated CLAUDE.md (map pattern)",
   },
   {
     num: 5,

@@ -1,12 +1,5 @@
 #!/usr/bin/env node
 
-/**
- * personal-ai-skills CLI
- *
- * Universal AI skills installer for 20+ AI assistants.
- * Install skills, agents, commands, rules, and prompts.
- */
-
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { execSync } from "node:child_process";
@@ -47,19 +40,35 @@ import {
 } from "./prompts.js";
 import type { ProjectSetup, WizardResult } from "./prompts.js";
 import { installItems, uninstallItem } from "./install.js";
-import { getInstalledItems, getInstalledItemsByType, getPreferences, savePreferences } from "./lock.js";
+import { getInstalledItems, getInstalledItemsByType, getPreferences, savePreferences, removeFromLockFile } from "./lock.js";
 import { fetchSkillFromSource } from "./github.js";
 import {
   generateBridgeFiles,
   generateBridgeFilesForIds,
   writeBridgeFiles,
 } from "./bridge.js";
+import { scaffoldBrain } from "./brain-scaffold.js";
+import { verifyInstall } from "./verify-install.js";
 
 // ============================================================================
 // Version & Help
 // ============================================================================
 
-const VERSION = "1.0.0";
+function commandExistsSync(cmd: string): boolean {
+  try {
+    execSync(`which ${cmd}`, { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+let VERSION = "unknown";
+try {
+  const pkgPath = new URL("../package.json", import.meta.url).pathname;
+  const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8")) as { version: string };
+  VERSION = pkg.version;
+} catch { /* ignore */ }
 
 const HELP = `
 personal-ai-skills - Universal AI skills installer
@@ -224,82 +233,61 @@ async function resolveBridgeIds(
 // Master Prompt Builder
 // ============================================================================
 
-function buildMasterPrompt(wizard: WizardResult): string {
-  const skills = wizard.items.filter((i) => i.type === "skills");
-  const agents = wizard.items.filter((i) => i.type === "agents");
-  const project = wizard.projectSetup;
-
-  const sections: string[] = [];
-
-  // Opening instruction
-  const projectLabel = project ? `**${project.name}**` : "this project";
-  sections.push(
-    `You are my AI assistant for ${projectLabel}. My environment is fully configured — here is everything you need to know to help me effectively.`,
-  );
-
-  // Memory / second brain
-  if (wizard.memoryTools.length > 0) {
-    const memLines: string[] = [];
-    if (wizard.memoryTools.includes("obsidian")) {
-      memLines.push(
-        `- **Second brain vault**: \`${wizard.obsidianVaultPath}\` — my notes, research, and project wiki live here. When I mention "my notes", "the wiki", or "second brain", look here first.`,
-      );
-    }
-    if (wizard.memoryTools.includes("claude-mem")) {
-      memLines.push(
-        `- **Session memory (claude-mem)**: past session context is injected automatically. Use the \`search_memory\` MCP tool to find older decisions or conversations.`,
-      );
-    }
-    if (wizard.memoryTools.includes("graphify")) {
-      memLines.push(
-        `- **Knowledge graph (graphify)**: the codebase is mapped as a graph. Use it for large codebase exploration — up to 71× token reduction vs raw file reading.`,
-      );
-    }
-    sections.push(`## Memory & Second Brain\n\n${memLines.join("\n")}`);
-  }
-
-  // Project context
-  if (project) {
-    sections.push(
-      `## Project\n\n- **Name**: ${project.name}\n- **Description**: ${project.description}\n- **Stack**: ${project.stack}\n- **Spec**: read \`SPEC.md\` for full architecture, constraints, and decisions.`,
-    );
-  }
-
-  // Skills
-  if (skills.length > 0) {
-    const rows = skills
-      .map((s) => `| **${s.name}** | ${s.description.split(".")[0]}. | \`.ai/skills/${s.id}/\` |`)
-      .join("\n");
-    sections.push(
-      `## Skills (active in \`.ai/skills/\`)\n\nApply these automatically when the topic matches:\n\n| Skill | When | File |\n| --- | --- | --- |\n${rows}`,
-    );
-  }
-
-  // Agents
-  if (agents.length > 0) {
-    const rows = agents
-      .map((a) => `| **${a.name}** | ${a.description.split(".")[0]}. | \`.ai/agents/${a.id}/\` |`)
-      .join("\n");
-    sections.push(
-      `## Agents (in \`.ai/agents/\`)\n\nLoad the matching agent when I ask for deep specialised work:\n\n| Agent | Best for | File |\n| --- | --- | --- |\n${rows}`,
-    );
-  }
-
-  // Instructions
-  const instructions: string[] = [
-    "1. **Always** read `CLAUDE.md` (this project's bridge file) at the start of each session.",
-    "2. Before writing code, check `.ai/skills/` for guidelines matching the current task.",
-    "3. For deep specialised tasks (code review, security audit, refactoring), load the relevant agent.",
-  ];
+function buildMemorySection(wizard: WizardResult): string {
+  const lines: string[] = [];
   if (wizard.memoryTools.includes("obsidian")) {
-    instructions.push(
-      `4. My second brain is at \`${wizard.obsidianVaultPath}\`. Reference it when I ask about past decisions, notes, or context.`,
+    lines.push(
+      `- **Second brain vault**: \`${wizard.obsidianVaultPath}\` — my notes, research, and project wiki live here. When I mention "my notes", "the wiki", or "second brain", look here first.`,
     );
   }
   if (wizard.memoryTools.includes("claude-mem")) {
-    instructions.push("5. Use `search_memory` when you need context from older sessions.");
+    lines.push(
+      `- **Session memory (claude-mem)**: past session context is injected automatically. Use the \`search_memory\` MCP tool to find older decisions or conversations.`,
+    );
   }
-  sections.push(`## How to Work With Me\n\n${instructions.join("\n")}`);
+  if (wizard.memoryTools.includes("graphify")) {
+    lines.push(
+      `- **Knowledge graph (graphify)**: the codebase is mapped as a graph. Use it for large codebase exploration — up to 71× token reduction vs raw file reading.`,
+    );
+  }
+  return lines.length > 0 ? `## Memory & Second Brain\n\n${lines.join("\n")}` : "";
+}
+
+function buildProjectSection(project: NonNullable<WizardResult["projectSetup"]>): string {
+  return `## Project\n\n- **Name**: ${project.name}\n- **Description**: ${project.description}\n- **Stack**: ${project.stack}\n- **Spec**: read \`SPEC.md\` for full architecture, constraints, and decisions.`;
+}
+
+function buildRoutingSection(wizard: WizardResult): string {
+  const hasSkills = wizard.items.some((i) => i.type === "skills");
+  const hasAgents = wizard.items.some((i) => i.type === "agents");
+  const lines = ["## Routing"];
+  if (hasSkills) lines.push("- Skills available in `.ai/skills/` — load by topic, see CLAUDE.md Skills Map.");
+  if (hasAgents) lines.push("- Agents available in `.ai/agents/` — load on explicit request.");
+  lines.push("- Sub-specs in `docs/spec/<feature>/SPEC.md` — load when keywords match.");
+  return lines.join("\n");
+}
+
+function buildInstructionsSection(wizard: WizardResult): string {
+  const instructions = [
+    "1. Always read `CLAUDE.md` on session start — it is the routing map.",
+    "2. Match the task to a skill in `.ai/skills/` before writing code.",
+  ];
+  if (wizard.memoryTools.includes("claude-mem")) {
+    instructions.push("3. Use `search_memory` when you need context from older sessions.");
+  }
+  return `## How to work\n\n${instructions.join("\n")}`;
+}
+
+function buildMasterPrompt(wizard: WizardResult): string {
+  const project = wizard.projectSetup;
+
+  const sections = [
+    `You are my AI assistant for ${project ? `**${project.name}**` : "this project"}.`,
+    ...(wizard.memoryTools.length > 0 ? [buildMemorySection(wizard)] : []),
+    ...(project ? [buildProjectSection(project)] : []),
+    buildRoutingSection(wizard),
+    buildInstructionsSection(wizard),
+  ].filter(Boolean);
 
   return sections.join("\n\n---\n\n");
 }
@@ -417,6 +405,21 @@ async function cmdAdd(
         projectRoot,
       );
       handleInstallResult(result, spinner);
+
+      // Create always.md stub if rules were installed — CLAUDE.md references it
+      const rulesInstalled = wizard.items.some((i) => i.type === "rules");
+      if (rulesInstalled) {
+        const alwaysPath = path.join(projectRoot, ".ai", "rules", "always.md");
+        try {
+          await fs.promises.access(alwaysPath);
+        } catch {
+          await fs.promises.writeFile(
+            alwaysPath,
+            "# Always Rules\n\nLoad all files in this directory. These are hard constraints — apply to every task.\n",
+            "utf-8",
+          );
+        }
+      }
     }
 
     // Generate bridge files FIRST (writes CLAUDE.md with actual installed skills)
@@ -426,6 +429,7 @@ async function cmdAdd(
         projectRoot,
         wizard.obsidianVaultPath,
         wizard.items,
+        wizard.projectSetup?.slug,
       );
       if (files.length > 0) {
         const { written, skipped } = await writeBridgeFiles(files, projectRoot);
@@ -463,17 +467,91 @@ async function cmdAdd(
       });
       if (!p.isCancel(shouldRun) && shouldRun) {
         for (const { tool, cmd } of memoryCommands) {
-          const s = startSpinner(`Setting up ${tool}…`);
+          // Pre-check: graphify needs Python 3.10+ before we even try
+          if (tool === "graphify") {
+            const hasPython = commandExistsSync("python3") || commandExistsSync("python");
+            const hasPip = commandExistsSync("pip3") || commandExistsSync("pip");
+            if (!hasPython || !hasPip) {
+              const guide = process.platform === "darwin"
+                ? "  Install Python:  brew install python3\n  Or download from: https://python.org/downloads/"
+                : process.platform === "linux"
+                ? "  Install Python:  sudo apt install python3 python3-pip"
+                : "  Download Python 3.10+ from: https://python.org/downloads/";
+              showInfo(
+                `\n⚠️  graphify requires Python 3.10+ (not found on your system).\n${guide}\n\n  After installing Python, run manually:\n  pip3 install graphifyy && graphify install\n`,
+              );
+              continue;
+            }
+          }
+
+          // Use spinner only for fast commands (git clone, npx).
+          // For pip installs (graphify) stream output directly — pip is slow and has its own progress.
+          const isSlowCommand = tool === "graphify";
+
+          if (isSlowCommand) {
+            console.log(`\n▶  ${tool}: ${cmd}\n`);
+          }
+
+          const s = isSlowCommand ? null : startSpinner(`Setting up ${tool}…`);
           try {
             execSync(cmd, { stdio: "inherit", shell: process.env["SHELL"] ?? "/bin/sh" });
-            s.stop(`${tool} ✓`);
+            s?.stop(`${tool} ✓`);
+            if (!isSlowCommand) console.log();
+
+            if (tool === "claude-mem") {
+              showInfo(
+                "claude-mem installed.\n" +
+                "  • Hook registered in:  ~/.claude/settings.json\n" +
+                "  • Memory viewer:       http://localhost:37777\n" +
+                "  • Memory is automatic — just open Claude Code and start working.",
+              );
+            }
+            if (tool === "graphify") {
+              showInfo("graphify installed ✓ — use /graphify in Claude Code to build a knowledge graph.");
+            }
+            if (tool === "obsidian") {
+              showInfo(
+                `Vault ready at: ${wizard.obsidianVaultPath}\n` +
+                "  • Open this folder in Obsidian: Manage Vaults → Open folder as vault\n" +
+                "  • Drop files in .raw/ and Claude will auto-organise them into wiki/",
+              );
+            }
           } catch {
-            s.stop(`${tool} failed — run manually: ${cmd}`);
+            s?.stop(`${tool} setup failed.`);
+            if (tool === "graphify") {
+              showInfo(
+                "\n⚠️  graphify install failed.\n" +
+                "  Make sure Python 3.10+ and pip3 are installed, then run:\n" +
+                "  pip3 install graphifyy && graphify install\n",
+              );
+            } else if (tool === "claude-mem") {
+              showInfo("\n⚠️  claude-mem install failed. Run manually:\n  npx claude-mem install\n");
+            } else {
+              showInfo(`\n⚠️  ${tool} setup failed. Run manually:\n  ${cmd}\n`);
+            }
           }
-          // After obsidian setup (clone or pull), seed the basic vault structure
-          if (tool === "obsidian") {
+
+          // Seed vault directory structure after obsidian clone
+          if (tool === "obsidian" && wizard.projectSetup) {
             const expandedPath = wizard.obsidianVaultPath.replace(/^~/, process.env["HOME"] ?? "~");
-            await fs.promises.mkdir(path.join(expandedPath, ".raw"), { recursive: true });
+            const result = await scaffoldBrain({
+              vaultPath: expandedPath,
+              projectSlug: wizard.projectSetup.slug,
+              projectName: wizard.projectSetup.name,
+              projectDescription: wizard.projectSetup.description,
+              projectType: wizard.projectSetup.type,
+            });
+            if (result.vaultCreated) {
+              showInfo(`Brain vault scaffolded at: ${expandedPath}`);
+            } else if (result.projectCreated) {
+              showInfo(`Brain vault detected. Added project folder: wiki/projects/${wizard.projectSetup.slug}/`);
+            } else if (result.alreadyUpToDate) {
+              showInfo(`Brain folder for "${wizard.projectSetup.slug}" already exists — skipped.`);
+            }
+          } else if (tool === "obsidian") {
+            // No project setup — just seed the bare minimum so the vault is at least browsable
+            const expandedPath = wizard.obsidianVaultPath.replace(/^~/, process.env["HOME"] ?? "~");
+            await fs.promises.mkdir(path.join(expandedPath, ".raw", "projects"), { recursive: true });
             await fs.promises.mkdir(path.join(expandedPath, "wiki", "projects"), { recursive: true });
             const hotPath = path.join(expandedPath, "wiki", "hot.md");
             try {
@@ -481,11 +559,10 @@ async function cmdAdd(
             } catch {
               await fs.promises.writeFile(
                 hotPath,
-                "# Session Cache\n\n<!-- Claude writes your most recent session summary here. Drop files in .raw/ to ingest them into the wiki. -->\n",
+                "# Session Cache\n\n<!-- claude-mem writes the latest session summary here. -->\n",
                 "utf-8",
               );
             }
-            showInfo(`Vault ready at: ${wizard.obsidianVaultPath}`);
           }
         }
       }
@@ -497,7 +574,30 @@ async function cmdAdd(
     await fs.promises.mkdir(aiDir, { recursive: true });
     const promptPath = path.join(aiDir, "AI-CONTEXT.md");
     await fs.promises.writeFile(promptPath, masterPrompt, "utf-8");
-    showInfo(`\n✨ Master AI context saved to: .ai/AI-CONTEXT.md\n   Paste it into your AI assistant to connect all installed tools.\n\n${masterPrompt}`);
+
+    // Run the static post-install health check + emit a paste-prompt for AI review.
+    const verifyResult = await verifyInstall({
+      projectRoot,
+      projectSlug: wizard.projectSetup?.slug,
+      projectType: wizard.projectSetup?.type,
+      vaultPath: wizard.memoryTools.includes("obsidian") ? wizard.obsidianVaultPath : undefined,
+      installedSkills: wizard.items.filter((i) => i.type === "skills").map((i) => i.id),
+      installedAgents: wizard.items.filter((i) => i.type === "agents").map((i) => i.id),
+      installedRules: wizard.items.filter((i) => i.type === "rules").map((i) => i.id),
+      bridgeIds: wizard.bridgeIds,
+    });
+
+    const verifyHeader = `\n📋 Health check — ${verifyResult.passed} passed, ${verifyResult.warnings} warnings, ${verifyResult.errors} errors\n`;
+    const verifyBody = verifyResult.lines.join("\n");
+
+    p.outro(
+      `\n✅ Setup complete!\n` +
+      verifyHeader +
+      verifyBody +
+      `\n\n` +
+      verifyResult.pastePrompt +
+      `\n`,
+    );
 
     return;
   }
@@ -514,6 +614,18 @@ async function cmdAdd(
   if (builtinItem) {
     items = [builtinItem];
   } else {
+    // If source looks like a plain name (no slashes, no protocol), it's not a valid
+    // GitHub/URL source — give a clear "not found in catalog" message instead of
+    // the confusing "Unable to parse source" thrown by parseSource.
+    const looksLikeExternalSource =
+      source.includes("/") || source.startsWith("http");
+    if (!looksLikeExternalSource) {
+      showError(
+        `"${source}" not found in the builtin catalog. Run \`personal-ai-skills list ${contentType}\` to see available items, or pass a GitHub source like \`owner/repo\`.`,
+      );
+      return;
+    }
+
     const spinner = startSpinner(`Fetching from ${source}...`);
     try {
       const fetched = await fetchSkillFromSource(source);
@@ -653,6 +765,30 @@ async function autoGenerateBridgeFiles(
 }
 
 /**
+ * Read the project slug from package.json `name`, falling back to the directory
+ * basename. Slugified to lowercase + dashes.
+ */
+async function readProjectSlug(projectRoot: string): Promise<string | undefined> {
+  let raw = path.basename(projectRoot);
+  try {
+    const pkgRaw = await fs.promises.readFile(
+      path.join(projectRoot, "package.json"),
+      "utf-8",
+    );
+    const pkg = JSON.parse(pkgRaw) as { name?: unknown };
+    if (typeof pkg.name === "string" && pkg.name.length > 0) raw = pkg.name;
+  } catch {
+    // No package.json or unreadable — fall back to directory basename
+  }
+  const slug = raw
+    .replace(/^@[^/]+\//, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  return slug.length > 0 ? slug : undefined;
+}
+
+/**
  * Bridge command — generate context files for selected editors
  */
 async function cmdBridge(
@@ -679,7 +815,31 @@ async function cmdBridge(
   // For global bridge, reference ~/.ai/ instead of .ai/
   const prefs = await getPreferences("global");
   const vaultPath = prefs?.obsidianVaultPath ?? "~/ai-brain";
-  const files = await generateBridgeFilesForIds(bridgeIds, outputRoot, vaultPath);
+
+  // Derive installed items + project slug from local state when generating
+  // a project bridge. Both are needed for CLAUDE.md to render the Skills/Agents
+  // Maps and the Brain Map with real paths instead of placeholders.
+  let installedItems: CatalogItem[] | undefined;
+  let projectSlug: string | undefined;
+  if (!isGlobal) {
+    const installed = await getInstalledItems("project", outputRoot);
+    installedItems = installed.map((i) => ({
+      id: i.id,
+      name: i.id,
+      description: "",
+      type: i.type,
+      path: "",
+    }));
+    projectSlug = await readProjectSlug(outputRoot);
+  }
+
+  const files = await generateBridgeFilesForIds(
+    bridgeIds,
+    outputRoot,
+    vaultPath,
+    installedItems,
+    projectSlug,
+  );
 
   if (files.length === 0) {
     showInfo("No bridge files to generate.");
@@ -754,29 +914,27 @@ async function cmdRemove(
     return;
   }
 
-  // Get assistants to remove from
-  const allAssistants = getAllAssistants();
-  const targetAssistants = item.assistants
-    .map((id) => allAssistants.find((a) => a.id === id))
-    .filter(Boolean) as AssistantConfig[];
-
   const spinner = startSpinner(`Removing ${name}...`);
 
-  let removed = 0;
-  for (const _assistant of targetAssistants) {
-    const catalogItem: CatalogItem = {
-      id: item.id,
-      name: item.id,
-      description: "",
-      type: item.type,
-      path: "",
-    };
+  const catalogItem: CatalogItem = {
+    id: item.id,
+    name: item.id,
+    description: "",
+    type: item.type,
+    path: "",
+  };
 
-    const success = await uninstallItem(catalogItem, scope);
-    if (success) removed++;
+  const success = await uninstallItem(catalogItem, scope);
+
+  if (success) {
+    // Remove all assistant entries so the item disappears from lock file
+    for (const assistantId of item.assistants) {
+      await removeFromLockFile(item.type, item.id, assistantId, scope);
+    }
+    spinner.stop(`Removed ${name}`);
+  } else {
+    spinner.stop(`Failed to remove ${name}`);
   }
-
-  spinner.stop(`Removed ${name} from ${removed} assistants`);
 }
 
 /**
@@ -914,9 +1072,14 @@ async function cmdUpdate(
       continue;
     }
 
+    const allAssistants = getAllAssistants();
+    const originalAssistants = installed.assistants
+      .map((id) => allAssistants.find((a) => a.id === id))
+      .filter(Boolean) as AssistantConfig[];
+
     const result = await installItems(
       [catalogItem],
-      [],
+      originalAssistants,
       installed.scope as InstallScope,
       installed.method as InstallMethod,
     );
@@ -997,7 +1160,13 @@ async function updateSpecMap(
     }
   }
 
-  const newRow = `| ${specName} | ${specRelPath} |`;
+  // Detect column count from the header row so old 2-col tables still get
+  // a matching 2-col row, and new 3-col (Topic | Keywords | Load) tables get
+  // a 3-col row with the spec name as the default keyword.
+  const headerCols = (lines[headerIdx].match(/\|/g) ?? []).length - 1;
+  const newRow = headerCols >= 3
+    ? `| ${specName} | ${specName} | \`${specRelPath}\` |`
+    : `| ${specName} | \`${specRelPath}\` |`;
   lines.splice(lastTableLine + 1, 0, newRow);
   await fs.promises.writeFile(rootSpecPath, lines.join("\n"), "utf-8");
 }
@@ -1141,7 +1310,13 @@ async function cmdInitSpec(args: string[]): Promise<void> {
     const relPath = `docs/spec/${specName}/SPEC.md`;
     await updateSpecMap(rootSpecPath, specName, relPath);
 
-    p.outro(`Created docs/spec/${specName}/SPEC.md${fs.existsSync(rootSpecPath) ? " and updated SPEC.md Spec Map" : ""}`);
+    const claudeMdExists = fs.existsSync(path.join(projectRoot, "CLAUDE.md"));
+    const tail = claudeMdExists
+      ? "\n  Re-run `personal-ai-skills bridge` to refresh CLAUDE.md Spec Map."
+      : "";
+    p.outro(
+      `Created docs/spec/${specName}/SPEC.md${fs.existsSync(rootSpecPath) ? " and updated SPEC.md Spec Map" : ""}${tail}`,
+    );
   }
 }
 
