@@ -30,18 +30,13 @@
 
 > Load the matching sub-spec when the user's task mentions these keywords.
 > Scaffold a new one with: `npx personal-ai-skills init spec <name>`
+> Delete rows below for features your project doesn't have.
 
-<!--
-  EXAMPLE rows — uncomment after you've actually scaffolded these specs.
-  Or just run `npx personal-ai-skills init spec <name>` and re-run `bridge` —
-  the table will rebuild itself with your real sub-specs.
-
-  | Topic     | Keywords                          | Load                         |
-  | --------- | --------------------------------- | ---------------------------- |
-  | auth      | auth, login, logout, JWT, session | @docs/spec/auth/SPEC.md      |
-  | billing   | billing, stripe, invoice, plan    | @docs/spec/billing/SPEC.md   |
-  | dashboard | dashboard, chart, metrics         | @docs/spec/dashboard/SPEC.md |
--->
+| Topic     | Keywords                          | Load                         |
+| --------- | --------------------------------- | ---------------------------- |
+| auth      | auth, login, logout, JWT, session | @docs/spec/auth/SPEC.md      |
+| billing   | billing, stripe, invoice, plan    | @docs/spec/billing/SPEC.md   |
+| dashboard | dashboard, chart, metrics         | @docs/spec/dashboard/SPEC.md |
 
 ## 🗺️ Skills
 

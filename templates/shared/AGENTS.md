@@ -18,6 +18,7 @@
 
 > Load the matching sub-spec when the user's task mentions these keywords.
 > Scaffold a new one with: `npx personal-ai-skills init spec <name>`
+> Delete rows below for features your project doesn't have.
 
 | Topic | Keywords | Load |
 | --- | --- | --- |

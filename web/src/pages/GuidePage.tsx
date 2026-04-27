@@ -391,52 +391,75 @@ export function GuidePage() {
         <div className={styles.codeBlock} style={{ marginBottom: "2rem" }}>
           <span className={styles.codeLabel}>Full directory layout</span>
           <pre className={styles.codePre}>
-            <code>{`~/
-├── .ai/                            ← GLOBAL config (all projects on this machine)
-│   ├── always.md                   ← ≤200 tokens, loads on every message
-│   └── integrations/
-│       ├── obsidian/INTEGRATION.md ← Obsidian vault rules for the AI
-│       ├── claude-mem/INTEGRATION.md ← session memory rules
-│       └── graphify/INTEGRATION.md ← knowledge graph rules (optional)
+            <code>{`<your-brain-path>/                      ← One location, you provide the path
+├── config/                             ← identity + integrations
+│   ├── always.md                       ← ~50 tokens, every message
+│   └── integrations/                   ← obsidian, mem, graphify
+│       ├── obsidian.md
+│       ├── claude-mem.md
+│       └── graphify.md
+├── .raw/                               ← drop PDFs, docs, videos
+│   └── projects/                       ← one folder per project
+│       ├── personal-ai-skills/
+│       ├── erp-pro-ui/
+│       ├── erp-pro/
+│       ├── auth-service/
+│       └── shared/                     ← cross-project knowledge
 │
-├── ai-brain/                       ← OBSIDIAN VAULT (your second brain)
-│   ├── .raw/                       ← drop PDFs, docs, videos, screenshots here
-│   └── wiki/
-│       ├── hot.md                  ← session cache (auto-loaded by claude-obsidian)
-│       ├── index.md                ← master catalog
-│       ├── concepts/               ← extracted ideas
-│       ├── entities/               ← people, tools, companies
-│       ├── projects/
-│       │   ├── my-saas/            ← notes for this project
-│       │   └── other-project/
-│       └── sources/                ← processed versions of .raw/ files
+├── wiki/                               ← claude-obsidian manages this
+│   ├── hot.md                          ← session cache (auto)
+│   ├── index.md                        ← master catalog
+│   ├── concepts/                       ← extracted ideas
+│   ├── entities/                       ← people, tools, companies
+│   ├── sources/                        ← ingested from .raw/
+│   └── projects/                       ← one folder per project
+│       ├── personal-ai-skills/
+│       │
+│       ├── erp-pro-ui/
+│       │   ├── index.md
+│       │   ├── components.md           ← component catalog
+│       │   ├── design-tokens.md        ← colors, spacing, typography
+│       │   └── changelog.md            ← what changed, when
+│       │
+│       ├── erp-pro/
+│       │   ├── index.md                ← project overview
+│       │   ├── decisions.md            ← architecture decisions
+│       │   ├── architecture.md         ← system design
+│       │   ├── api-contracts.md        ← APIs this app CONSUMES
+│       │   └── dependencies.md         ← links to ui-library + auth-service
+│       │
+│       ├── auth-service/
+│       │   ├── index.md
+│       │   ├── roles-matrix.md         ← who can do what
+│       │   ├── api-contracts.md        ← APIs this app EXPOSES
+│       │   └── flows.md                ← login, register, 2FA flows
+│       │
+│       └── shared/                     ← cross-project knowledge
+│            ├── api-contracts.md       ← how all 3 apps talk to each other
+│            ├── shared-types.md        ← TypeScript types used everywhere
+│            ├── deployment.md          ← how to deploy the whole system
+│            └── env-vars.md            ← environment variables across apps
+└── graphify-out/                       ← knowledge graph (optional)
+
+
+project/                                ← PER-PROJECT
+├── .ai/                                ← skills, agents, rules
+│   ├── skills/
+│   ├── agents/
+│   ├── rules/
+│   └── .skill-lock.json
+├── SPEC.md                             ← what the app IS (~150 tokens, always load)
+├── docs/spec/                          ← page specs (~200 tokens, on demand)
+│   ├── auth/SPEC.md                    ← only load when working on auth
+│   ├── inventory/SPEC.md               ← only load when working on inventory
+│   ├── billing/SPEC.md                 ← only load when working on billing
+│   └── dashboard/SPEC.md
 │
-└── projects/
-    └── my-saas/                    ← PROJECT config
-        ├── SPEC.md                 ← root spec, always loaded (~150 tokens)
-        ├── CLAUDE.md               ← MAP — entry point, points to everything
-        ├── AGENTS.md               ← Copilot/Codex bridge
-        ├── .cursor/rules/          ← Cursor bridge
-        ├── .vscode/settings.json   ← VS Code bridge (JSON merge)
-        ├── GEMINI.md               ← Gemini bridge
-        ├── .windsurfrules          ← Windsurf bridge
-        │
-        ├── .ai/                    ← project skills, agents, rules
-        │   ├── skills/
-        │   │   ├── modern-react/SKILL.md
-        │   │   └── api-design/SKILL.md
-        │   ├── agents/
-        │   │   └── code-reviewer/AGENT.md
-        │   ├── rules/
-        │   │   └── always.md
-        │   └── commands/
-        │       └── code-review.md
-        │
-        └── docs/spec/              ← HIERARCHICAL SPECS (load on demand)
-            ├── auth/SPEC.md        ← load when: auth, login, session
-            ├── inventory/SPEC.md   ← load when: stock, SKU, warehouse
-            ├── billing/SPEC.md     ← load when: stripe, invoice, plan
-            └── dashboard/SPEC.md   ← load when: charts, analytics, metrics`}</code>
+├── CLAUDE.md                           ← MAP (tiny index, not a dump)
+├── AGENTS.md                           ← Copilot/Codex bridge
+├── .cursor/rules/                      ← Cursor bridge
+├── .vscode/settings.json               ← VS Code bridge (merged)
+└── GEMINI.md                           ← Gemini bridge`}</code>
           </pre>
         </div>
 
@@ -899,26 +922,36 @@ Create a detailed report of all findings.`}</code>
             cache — it holds the most recent context across all projects.
           </p>
           <div className={styles.codeBlock} style={{ marginTop: "1rem" }}>
-            <span className={styles.codeLabel}>~/ai-brain/ vault structure</span>
+            <span className={styles.codeLabel}>&lt;your-brain-path&gt;/ vault structure</span>
             <pre className={styles.codePre}>
-              <code>{`~/ai-brain/                         ← your Obsidian vault
+              <code>{`<your-brain-path>/                  ← One location, you provide the path
+├── config/                         ← identity + integrations
+│   ├── always.md                   ← ~50 tokens, every message
+│   └── integrations/
+│       ├── obsidian.md
+│       ├── claude-mem.md
+│       └── graphify.md
+│
 ├── .raw/                           ← drop ANY file here (PDFs, docs, videos)
-│   ├── papers/
-│   ├── docs/
-│   └── screenshots/
+│   └── projects/                   ← one folder per project
+│       ├── personal-ai-skills/
+│       ├── erp-pro-ui/
+│       ├── erp-pro/
+│       ├── auth-service/
+│       └── shared/                 ← cross-project sources
 │
 ├── wiki/                           ← claude-obsidian auto-manages all of this
 │   ├── hot.md                      ← session cache (auto-loaded every chat)
 │   ├── index.md                    ← master catalog of everything
 │   ├── concepts/                   ← ideas extracted from .raw/ files
 │   ├── entities/                   ← people, tools, companies
-│   ├── projects/
-│   │   ├── my-saas/
-│   │   │   ├── index.md            ← project overview
-│   │   │   ├── architecture.md     ← key decisions
-│   │   │   └── sessions.md         ← recent session notes
-│   │   └── personal-ai-skills/
-│   └── sources/                    ← processed versions of .raw/ files
+│   ├── sources/                    ← processed versions of .raw/ files
+│   └── projects/                   ← one folder per project
+│       ├── personal-ai-skills/
+│       ├── erp-pro-ui/             ← UI library notes
+│       ├── erp-pro/                ← app notes (decisions, architecture)
+│       ├── auth-service/           ← auth notes (roles, flows)
+│       └── shared/                 ← cross-project knowledge
 │
 └── graphify-out/                   ← on-demand knowledge graph output
     └── GRAPH_REPORT.md             ← read this before grepping large repos

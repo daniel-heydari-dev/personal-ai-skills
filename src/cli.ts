@@ -440,13 +440,16 @@ async function cmdAdd(
 
     // Scaffold SPEC.md (+ CLAUDE.md if bridge didn't already write it)
     if (wizard.projectSetup) {
-      const { specCreated, claudeCreated } = await scaffoldProjectSpec(
+      const { specCreated, claudeCreated, subSpecsCreated } = await scaffoldProjectSpec(
         wizard.projectSetup,
         wizard.obsidianVaultPath,
         projectRoot,
       );
       if (specCreated) showInfo("Created SPEC.md — fill in your project details");
       if (claudeCreated) showInfo(`Created CLAUDE.md — vault path set to ${wizard.obsidianVaultPath}`);
+      if (subSpecsCreated.length > 0) {
+        showInfo(`Created example sub-specs: ${subSpecsCreated.join(", ")}`);
+      }
     }
 
     // Run one-time memory tool setup commands using the actual vault path
@@ -1179,10 +1182,11 @@ async function scaffoldProjectSpec(
   setup: ProjectSetup,
   vaultPath: string,
   projectRoot: string,
-): Promise<{ specCreated: boolean; claudeCreated: boolean }> {
+): Promise<{ specCreated: boolean; claudeCreated: boolean; subSpecsCreated: string[] }> {
   const templatesRoot = getPackageTemplatesRoot();
   let specCreated = false;
   let claudeCreated = false;
+  const subSpecsCreated: string[] = [];
 
   // SPEC.md
   const specDest = path.join(projectRoot, "SPEC.md");
@@ -1198,6 +1202,26 @@ async function scaffoldProjectSpec(
       .replace(/\{\{PROJECT_SLUG\}\}/g, setup.slug);
     await fs.promises.writeFile(specDest, template, "utf-8");
     specCreated = true;
+  }
+
+  // Example sub-spec stubs — make the docs/spec/<feature>/SPEC.md references
+  // in CLAUDE.md/AGENTS.md actually resolve. Users delete what they don't need.
+  const pageTemplate = await fs.promises.readFile(
+    path.join(templatesRoot, "shared", "SPEC.page.md"),
+    "utf-8",
+  );
+  const exampleSubSpecs = ["auth", "billing", "dashboard"];
+  for (const name of exampleSubSpecs) {
+    const subSpecDir = path.join(projectRoot, "docs", "spec", name);
+    const subSpecDest = path.join(subSpecDir, "SPEC.md");
+    if (!fs.existsSync(subSpecDest)) {
+      const filled = pageTemplate
+        .replace(/\{\{PAGE_NAME\}\}/g, name)
+        .replace(/\{\{PROJECT_SLUG\}\}/g, setup.slug);
+      await fs.promises.mkdir(subSpecDir, { recursive: true });
+      await fs.promises.writeFile(subSpecDest, filled, "utf-8");
+      subSpecsCreated.push(`docs/spec/${name}/SPEC.md`);
+    }
   }
 
   // CLAUDE.md — from the shared template, substituting vault path and slug
@@ -1218,7 +1242,7 @@ async function scaffoldProjectSpec(
     claudeCreated = true;
   }
 
-  return { specCreated, claudeCreated };
+  return { specCreated, claudeCreated, subSpecsCreated };
 }
 
 /**
