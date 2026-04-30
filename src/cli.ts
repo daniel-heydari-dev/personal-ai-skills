@@ -234,23 +234,19 @@ async function resolveBridgeIds(
 // ============================================================================
 
 function buildMemorySection(wizard: WizardResult): string {
+  // Always emit — vault path is always set (defaults to ~/ai-brain), and the
+  // section is the same across every project the user installs into.
   const lines: string[] = [];
-  if (wizard.memoryTools.includes("obsidian")) {
-    lines.push(
-      `- **Second brain vault**: \`${wizard.obsidianVaultPath}\` — my notes, research, and project wiki live here. When I mention "my notes", "the wiki", or "second brain", look here first.`,
-    );
-  }
-  if (wizard.memoryTools.includes("claude-mem")) {
-    lines.push(
-      `- **Session memory (claude-mem)**: past session context is injected automatically. Use the \`search_memory\` MCP tool to find older decisions or conversations.`,
-    );
-  }
-  if (wizard.memoryTools.includes("graphify")) {
-    lines.push(
-      `- **Knowledge graph (graphify)**: the codebase is mapped as a graph. Use it for large codebase exploration — up to 71× token reduction vs raw file reading.`,
-    );
-  }
-  return lines.length > 0 ? `## Memory & Second Brain\n\n${lines.join("\n")}` : "";
+  lines.push(
+    `- **Second brain vault**: \`${wizard.obsidianVaultPath}\` — my notes, research, and project wiki live here. When I mention "my notes", "the wiki", or "second brain", look here first.`,
+  );
+  lines.push(
+    `- **Session memory (claude-mem)**: past session context is injected automatically. Use the \`search_memory\` MCP tool to find older decisions or conversations.`,
+  );
+  lines.push(
+    `- **Knowledge graph (graphify)**: the codebase is mapped as a graph. Use it for large codebase exploration — up to 71× token reduction vs raw file reading.`,
+  );
+  return `## Memory & Second Brain\n\n${lines.join("\n")}`;
 }
 
 function buildProjectSection(project: NonNullable<WizardResult["projectSetup"]>): string {
@@ -267,14 +263,12 @@ function buildRoutingSection(wizard: WizardResult): string {
   return lines.join("\n");
 }
 
-function buildInstructionsSection(wizard: WizardResult): string {
+function buildInstructionsSection(_wizard: WizardResult): string {
   const instructions = [
     "1. Always read `CLAUDE.md` on session start — it is the routing map.",
     "2. Match the task to a skill in `.ai/skills/` before writing code.",
+    "3. Use `search_memory` when you need context from older sessions.",
   ];
-  if (wizard.memoryTools.includes("claude-mem")) {
-    instructions.push("3. Use `search_memory` when you need context from older sessions.");
-  }
   return `## How to work\n\n${instructions.join("\n")}`;
 }
 
@@ -283,7 +277,7 @@ function buildMasterPrompt(wizard: WizardResult): string {
 
   const sections = [
     `You are my AI assistant for ${project ? `**${project.name}**` : "this project"}.`,
-    ...(wizard.memoryTools.length > 0 ? [buildMemorySection(wizard)] : []),
+    buildMemorySection(wizard),
     ...(project ? [buildProjectSection(project)] : []),
     buildRoutingSection(wizard),
     buildInstructionsSection(wizard),

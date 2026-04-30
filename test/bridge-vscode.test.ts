@@ -29,19 +29,24 @@ const vscodeFakeAssistant: AssistantConfig = {
 };
 
 describe("VS Code bridge — generateBridgeFilesForIds", () => {
+  function vscodeFile(files: { filePath: string; content: string; alwaysWrite?: boolean }[]) {
+    const f = files.find((x) => x.filePath === ".vscode/settings.json");
+    if (!f) throw new Error("vscode bridge file not found");
+    return f;
+  }
+
   it("generates a vscode bridge file when requested", async () => {
     const tmp = makeTempDir();
     const files = await generateBridgeFilesForIds(["vscode"], tmp);
-    expect(files).toHaveLength(1);
-    expect(files[0].filePath).toBe(".vscode/settings.json");
-    expect(files[0].alwaysWrite).toBe(true);
+    const vscode = vscodeFile(files);
+    expect(vscode.alwaysWrite).toBe(true);
     fs.rmSync(tmp, { recursive: true });
   });
 
   it("generates valid JSON content", async () => {
     const tmp = makeTempDir();
     const files = await generateBridgeFilesForIds(["vscode"], tmp);
-    const content = JSON.parse(files[0].content) as Record<string, unknown>;
+    const content = JSON.parse(vscodeFile(files).content) as Record<string, unknown>;
     expect(content).toHaveProperty(
       "github.copilot.chat.codeGeneration.instructions",
     );
@@ -63,7 +68,7 @@ describe("VS Code bridge — generateBridgeFilesForIds", () => {
     );
 
     const files = await generateBridgeFilesForIds(["vscode"], tmp);
-    const content = JSON.parse(files[0].content) as Record<string, unknown>;
+    const content = JSON.parse(vscodeFile(files).content) as Record<string, unknown>;
 
     expect(content["editor.fontSize"]).toBe(14);
     expect(content["editor.tabSize"]).toBe(2);
@@ -90,7 +95,7 @@ describe("VS Code bridge — generateBridgeFilesForIds", () => {
     );
 
     const files = await generateBridgeFilesForIds(["vscode"], tmp);
-    const content = JSON.parse(files[0].content) as Record<string, unknown>;
+    const content = JSON.parse(vscodeFile(files).content) as Record<string, unknown>;
     const instructions = content[
       "github.copilot.chat.codeGeneration.instructions"
     ] as unknown[];
@@ -110,8 +115,7 @@ describe("VS Code bridge — generateBridgeFilesForIds", () => {
 
     // Should not throw — falls back to empty object
     const files = await generateBridgeFilesForIds(["vscode"], tmp);
-    expect(files).toHaveLength(1);
-    const content = JSON.parse(files[0].content) as Record<string, unknown>;
+    const content = JSON.parse(vscodeFile(files).content) as Record<string, unknown>;
     expect(content).toHaveProperty(
       "github.copilot.chat.codeGeneration.instructions",
     );
@@ -168,14 +172,15 @@ describe("generateBridgeFilesForIds — filtering", () => {
     fs.rmSync(tmp, { recursive: true });
   });
 
-  it("returns only requested bridge types", async () => {
+  it("returns only requested bridge types (plus AGENTS.md universal)", async () => {
     const tmp = makeTempDir();
     const files = await generateBridgeFilesForIds(["claude", "gemini"], tmp);
     const filePaths = files.map((f) => f.filePath);
     expect(filePaths).toContain("CLAUDE.md");
     expect(filePaths).toContain("GEMINI.md");
+    // AGENTS.md is the agents.md open standard — always included unless 'none'.
+    expect(filePaths).toContain("AGENTS.md");
     expect(filePaths).not.toContain(".vscode/settings.json");
-    expect(filePaths).not.toContain("AGENTS.md");
     fs.rmSync(tmp, { recursive: true });
   });
 

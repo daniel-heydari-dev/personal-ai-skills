@@ -57,43 +57,49 @@ describe("generateBridgeFilesForIds — bridge selection logic", () => {
     fs.rmSync(tmp, { recursive: true });
   });
 
-  it("['claude'] → exactly 1 file (CLAUDE.md)", async () => {
+  it("['claude'] → CLAUDE.md + AGENTS.md (universal always included)", async () => {
     const tmp = makeTempDir();
     const files = await generateBridgeFilesForIds(["claude"], tmp);
-    expect(files).toHaveLength(1);
-    expect(files[0].filePath).toBe("CLAUDE.md");
-    fs.rmSync(tmp, { recursive: true });
-  });
-
-  it("['cursor'] → exactly 1 file (.cursor/rules/ai-config.mdc)", async () => {
-    const tmp = makeTempDir();
-    const files = await generateBridgeFilesForIds(["cursor"], tmp);
-    expect(files).toHaveLength(1);
-    expect(files[0].filePath).toBe(".cursor/rules/ai-config.mdc");
-    fs.rmSync(tmp, { recursive: true });
-  });
-
-  it("['claude', 'cursor'] → exactly 2 files", async () => {
-    const tmp = makeTempDir();
-    const files = await generateBridgeFilesForIds(["claude", "cursor"], tmp);
     expect(files).toHaveLength(2);
     const paths = files.map((f) => f.filePath);
     expect(paths).toContain("CLAUDE.md");
-    expect(paths).toContain(".cursor/rules/ai-config.mdc");
+    expect(paths).toContain("AGENTS.md");
     fs.rmSync(tmp, { recursive: true });
   });
 
-  it("['claude', 'cursor', 'vscode'] → exactly 3 files", async () => {
+  it("['cursor'] → cursor + AGENTS.md (universal always included)", async () => {
+    const tmp = makeTempDir();
+    const files = await generateBridgeFilesForIds(["cursor"], tmp);
+    expect(files).toHaveLength(2);
+    const paths = files.map((f) => f.filePath);
+    expect(paths).toContain(".cursor/rules/ai-config.mdc");
+    expect(paths).toContain("AGENTS.md");
+    fs.rmSync(tmp, { recursive: true });
+  });
+
+  it("['claude', 'cursor'] → 3 files (with AGENTS.md)", async () => {
+    const tmp = makeTempDir();
+    const files = await generateBridgeFilesForIds(["claude", "cursor"], tmp);
+    expect(files).toHaveLength(3);
+    const paths = files.map((f) => f.filePath);
+    expect(paths).toContain("CLAUDE.md");
+    expect(paths).toContain(".cursor/rules/ai-config.mdc");
+    expect(paths).toContain("AGENTS.md");
+    fs.rmSync(tmp, { recursive: true });
+  });
+
+  it("['claude', 'cursor', 'vscode'] → 4 files (with AGENTS.md)", async () => {
     const tmp = makeTempDir();
     const files = await generateBridgeFilesForIds(
       ["claude", "cursor", "vscode"],
       tmp,
     );
-    expect(files).toHaveLength(3);
+    expect(files).toHaveLength(4);
     const paths = files.map((f) => f.filePath);
     expect(paths).toContain("CLAUDE.md");
     expect(paths).toContain(".cursor/rules/ai-config.mdc");
     expect(paths).toContain(".vscode/settings.json");
+    expect(paths).toContain("AGENTS.md");
     fs.rmSync(tmp, { recursive: true });
   });
 
@@ -112,10 +118,11 @@ describe("generateBridgeFilesForIds — bridge selection logic", () => {
     fs.rmSync(tmp, { recursive: true });
   });
 
-  it("unknown bridge ID → no file generated (silently skipped)", async () => {
+  it("unknown bridge ID → only AGENTS.md (unknown silently skipped, universal always added)", async () => {
     const tmp = makeTempDir();
     const files = await generateBridgeFilesForIds(["nonexistent-tool"], tmp);
-    expect(files).toHaveLength(0);
+    expect(files).toHaveLength(1);
+    expect(files[0].filePath).toBe("AGENTS.md");
     fs.rmSync(tmp, { recursive: true });
   });
 });

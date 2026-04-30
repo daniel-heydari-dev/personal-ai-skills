@@ -625,6 +625,10 @@ export async function generateBridgeFilesForIds(
     ? new Set(getAvailableBridgeTypes())
     : new Set(bridgeIds.map(resolveKey));
 
+  // AGENTS.md is the open standard (agents.md) — always include the universal
+  // bridge unless the user explicitly opted out via 'none' (handled above).
+  keys.add("universal");
+
   const files: BridgeFile[] = [];
   const seenPaths = new Set<string>();
   for (const key of keys) {
