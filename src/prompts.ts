@@ -63,7 +63,7 @@ export async function selectContentTypes(excludeIntegrations = false): Promise<C
           {
             value: "integration" as ContentType,
             label: "Integrations",
-            hint: "Obsidian, claude-mem, graphify — memory & knowledge tools",
+            hint: "Obsidian, claude-mem, graphify, caveman — memory & knowledge tools",
           },
         ]
       : []),
@@ -113,7 +113,7 @@ export async function selectContentType(): Promise<ContentType | symbol> {
       {
         value: "integration" as ContentType,
         label: "Integrations",
-        hint: "Obsidian, claude-mem, graphify",
+        hint: "Obsidian, claude-mem, graphify, caveman",
       },
     ],
   });
@@ -267,7 +267,7 @@ export interface ProjectSetup {
 
 export interface WizardResult extends InstallOptions {
   obsidianVaultPath: string;
-  memoryTools: string[];         // e.g. ['obsidian', 'claude-mem', 'graphify']
+  memoryTools: string[];         // e.g. ['obsidian', 'claude-mem', 'graphify', 'caveman']
   projectSetup?: ProjectSetup;   // undefined = user skipped spec scaffolding
   bridgeIds: string[];           // which bridge files to generate
 }
@@ -277,6 +277,7 @@ export function getMemoryToolNextStep(tool: string, vaultPath: string): string |
     obsidian: `git clone https://github.com/AgriciDaniel/claude-obsidian ${vaultPath}`,
     "claude-mem": "npx claude-mem install",
     graphify: "pip3 install graphifyy && graphify install",
+    caveman: "claude plugin marketplace add JuliusBrussee/caveman && claude plugin install caveman@caveman",
   };
   return steps[tool];
 }
@@ -285,6 +286,7 @@ export const MEMORY_TOOL_NEXT_STEPS_MAP: Record<string, string> = {
   obsidian: "git clone https://github.com/AgriciDaniel/claude-obsidian ~/ai-brain",
   "claude-mem": "npx claude-mem install",
   graphify: "pip3 install graphifyy && graphify install",
+  caveman: "claude plugin marketplace add JuliusBrussee/caveman && claude plugin install caveman@caveman",
 };
 
 // ============================================================================
@@ -322,6 +324,11 @@ export async function selectMemoryTools(): Promise<string[] | symbol> {
         value: "graphify",
         label: "graphify (optional, requires Python 3.10+)",
         hint: "knowledge graph — 71x token reduction for large codebases",
+      },
+      {
+        value: "caveman",
+        label: "caveman",
+        hint: "token compression — 65-75% fewer output tokens, keeps all technical accuracy",
       },
     ],
     required: false,
