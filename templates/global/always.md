@@ -18,10 +18,13 @@
     ❌ Anything longer than 2 lines → it doesn't belong here
 -->
 
+<!--
+  ⚠️ EDITME — replace "Your Name" with your real name, then remove this banner.
+-->
+
 ## Identity
 
-- Developer: {{YOUR_NAME}}
-- Timezone: {{YOUR_TIMEZONE}}
+- Developer: Your Name
 - Response style: concise, direct, no filler phrases, no emoji unless asked
 
 ## Language & Defaults

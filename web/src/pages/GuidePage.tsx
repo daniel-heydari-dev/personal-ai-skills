@@ -298,9 +298,23 @@ const aiConfigFiles: {
   icon: React.ReactNode;
   note?: string;
 }[] = [
-  { assistant: "Claude Code", file: "CLAUDE.md", icon: <ClaudeIcon />, note: "map pattern — < 200 tokens always-load" },
-  { assistant: "GitHub Copilot", file: "AGENTS.md + .github/copilot-instructions.md", icon: <CopilotIcon /> },
-  { assistant: "VS Code", file: ".vscode/settings.json", icon: <CopilotIcon />, note: "JSON merge — never overwrites existing keys" },
+  {
+    assistant: "Claude Code",
+    file: "CLAUDE.md",
+    icon: <ClaudeIcon />,
+    note: "map pattern — < 200 tokens always-load",
+  },
+  {
+    assistant: "GitHub Copilot",
+    file: "AGENTS.md + .github/copilot-instructions.md",
+    icon: <CopilotIcon />,
+  },
+  {
+    assistant: "VS Code",
+    file: ".vscode/settings.json",
+    icon: <CopilotIcon />,
+    note: "JSON merge — never overwrites existing keys",
+  },
   { assistant: "Cursor", file: ".cursor/rules/", icon: <CursorIcon /> },
   { assistant: "Windsurf", file: ".windsurfrules", icon: <WindsurfIcon /> },
   { assistant: "Gemini CLI", file: "GEMINI.md", icon: <GeminiIcon /> },
@@ -394,9 +408,10 @@ export function GuidePage() {
             <code>{`<your-brain-path>/                      ← One location, you provide the path
 ├── config/                             ← identity + integrations
 │   ├── always.md                       ← ~50 tokens, every message
-│   └── integrations/                   ← obsidian, mem, graphify
+│   └── integrations/                   ← obsidian, mem, graphify, caveman
 │       ├── obsidian.md
 │       ├── claude-mem.md
+│       ├── caveman.md                  ← compressed communication mode
 │       └── graphify.md
 ├── .raw/                               ← drop PDFs, docs, videos
 │   └── projects/                       ← one folder per project
@@ -580,9 +595,7 @@ Obsidian       → why decisions were made   you paste it,     ~400 tokens`}</co
               </span>
               <span className={styles.configFileGroup}>
                 <code className={styles.configFile}>{c.file}</code>
-                {c.note && (
-                  <span className={styles.configNote}>{c.note}</span>
-                )}
+                {c.note && <span className={styles.configNote}>{c.note}</span>}
               </span>
             </div>
           ))}
@@ -619,7 +632,9 @@ Obsidian       → why decisions were made   you paste it,     ~400 tokens`}</co
               <div className={styles.skillTreeItem}>
                 <span className={styles.skillTreeIcon}>📄</span>
                 <span className={styles.skillTreeMain}>SKILL.md</span>
-                <span className={styles.skillTreeLabel}>← Core skill file (required)</span>
+                <span className={styles.skillTreeLabel}>
+                  ← Core skill file (required)
+                </span>
               </div>
               <div className={styles.skillTreeItem}>
                 <span className={styles.skillTreeIcon}>📄</span>
@@ -758,8 +773,8 @@ const filtered = useMemo(
             <code>.ai/commands/</code> or <code>.claude/commands/</code>.
             Instead of re-typing "review my code for security issues" every
             session, you create a command and invoke it with a slash shortcut.
-            Use <code>$ARGUMENTS</code> to pass a mode, filename, or any
-            dynamic value.
+            Use <code>$ARGUMENTS</code> to pass a mode, filename, or any dynamic
+            value.
           </p>
         </div>
 
@@ -922,7 +937,9 @@ Create a detailed report of all findings.`}</code>
             cache — it holds the most recent context across all projects.
           </p>
           <div className={styles.codeBlock} style={{ marginTop: "1rem" }}>
-            <span className={styles.codeLabel}>&lt;your-brain-path&gt;/ vault structure</span>
+            <span className={styles.codeLabel}>
+              &lt;your-brain-path&gt;/ vault structure
+            </span>
             <pre className={styles.codePre}>
               <code>{`<your-brain-path>/                  ← One location, you provide the path
 ├── config/                         ← identity + integrations
@@ -930,6 +947,7 @@ Create a detailed report of all findings.`}</code>
 │   └── integrations/
 │       ├── obsidian.md
 │       ├── claude-mem.md
+│       ├── caveman.md              ← compressed communication mode
 │       └── graphify.md
 │
 ├── .raw/                           ← drop ANY file here (PDFs, docs, videos)
@@ -1025,8 +1043,8 @@ npx personal-ai-skills`}</code>
             <span className={styles.ruleNum}>01</span>
             <h3 className={styles.ruleTitle}>Always reference @SPEC.md</h3>
             <p className={styles.ruleDesc}>
-              Start every major session with "We're building @SPEC.md" so the
-              AI has full project context. Never assume it remembers from before.
+              Start every major session with "We're building @SPEC.md" so the AI
+              has full project context. Never assume it remembers from before.
             </p>
           </div>
           <div className={styles.ruleCard}>
@@ -1042,8 +1060,8 @@ npx personal-ai-skills`}</code>
             <span className={styles.ruleNum}>03</span>
             <h3 className={styles.ruleTitle}>Use real docs, not AI memory</h3>
             <p className={styles.ruleDesc}>
-              Always tell the AI to look up library docs via Context7 MCP or
-              web search. AI training data goes stale — official docs don't.
+              Always tell the AI to look up library docs via Context7 MCP or web
+              search. AI training data goes stale — official docs don't.
             </p>
           </div>
           <div className={styles.ruleCard}>
@@ -1051,8 +1069,8 @@ npx personal-ai-skills`}</code>
             <h3 className={styles.ruleTitle}>Create once, reuse always</h3>
             <p className={styles.ruleDesc}>
               Put any repeated instruction (coding style, doc lookup rules,
-              build steps) in a skill or command file. You should never type
-              the same thing to your AI twice.
+              build steps) in a skill or command file. You should never type the
+              same thing to your AI twice.
             </p>
           </div>
         </div>
@@ -1069,7 +1087,10 @@ npx personal-ai-skills`}</code>
         <div className={styles.ctaCode}>
           <code>npx personal-ai-skills</code>
         </div>
-        <div className={styles.ctaCode} style={{ marginTop: "0.5rem", opacity: 0.7 }}>
+        <div
+          className={styles.ctaCode}
+          style={{ marginTop: "0.5rem", opacity: 0.7 }}
+        >
           <code>npx personal-ai-skills init spec</code>
         </div>
         <div className={styles.ctaLinks}>

@@ -1,6 +1,6 @@
 {
   "name": "personal-ai-skills",
-  "version": "1.1.9",
+  "version": "1.1.11",
   "description": "Universal AI skills installer. Install skills, agents, commands, rules, and prompts across 20+ AI assistants (Claude, Cursor, Windsurf, Copilot, Gemini, and more).",
   "license": "MIT",
   "type": "module",
@@ -69,12 +69,12 @@
     "release": "source .env && npm set //registry.npmjs.org/:_authToken $NPM_TOKEN && pnpm publish --access public --no-git-checks"
   },
   "dependencies": {
-    "@clack/prompts": "^1.2.0"
+    "@clack/prompts": "^1.4.0"
   },
   "devDependencies": {
-    "@types/node": "^25.6.0",
-    "tsx": "^4.21.0",
+    "@types/node": "^25.9.1",
+    "tsx": "^4.22.3",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.7"
   }
 }

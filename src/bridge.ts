@@ -255,14 +255,15 @@ function buildRoutingMaps(
   const slug = projectSlug ?? "<your-project-slug>";
   const projectPath = `${vaultPath}/wiki/projects/${slug}`;
   sections.push(`## 🗺️ Brain Map
-> Obsidian vault — load only when the user asks about past decisions, notes, or session history.
+> Load in priority order when context seems lost or session resumed.
 
-| What | Load |
-| --- | --- |
-| Recent session cache | \`${vaultPath}/wiki/hot.md\` |
-| This project's notes | \`${projectPath}/\` |
-| Architecture decisions | \`${projectPath}/decisions.md\` |
-| Cross-project contracts | \`${vaultPath}/wiki/projects/shared/api-contracts.md\` |`);
+| What | When to load | Path |
+| --- | --- | --- |
+| **Session log** | First — resuming session, after compaction | \`.claude/session-log.md\` |
+| Recent session cache | Cross-session history | \`${vaultPath}/wiki/hot.md\` |
+| This project's notes | Feature context, past work | \`${projectPath}/\` |
+| Architecture decisions | ADRs, why decisions were made | \`${projectPath}/decisions.md\` |
+| Cross-project contracts | API contracts with other projects | \`${vaultPath}/wiki/projects/shared/api-contracts.md\` |`);
   sections.push(`## 🧠 Memory\n${memoryNote}`);
 
   return sections.join("\n\n");
@@ -285,7 +286,8 @@ const HEADER_COMMENT = `<!--
   read it as a plain pointer — works in both worlds.
 -->`;
 
-const CLAUDE_MEMORY_NOTE = `- **claude-mem** auto-injects recent session context — don't repeat what's already there.
+const CLAUDE_MEMORY_NOTE = `- **\`.claude/session-log.md\`** — git snapshot written after every turn. Read this first when resuming or context feels lost. Shows WHAT changed this session.
+- **claude-mem** auto-injects recent session context — don't repeat what's already there.
 - **\`search_memory\`** (MCP tool) — use for older sessions or specific past decisions.
 - **\`/graphify\`** — invoke for large-codebase navigation (up to 71× token reduction).`;
 
@@ -293,12 +295,22 @@ const AGENTS_MEMORY_NOTE = `- Past session context is auto-injected when the edi
 - If no context appears, ask the user for it explicitly.
 - For large-codebase navigation, ask the user to run \`/graphify\` or \`graphify install\`.`;
 
+async function hasGraphifyDir(projectRoot: string): Promise<boolean> {
+  try {
+    const stats = await fs.promises.stat(path.join(projectRoot, "graphify-out"));
+    return stats.isDirectory();
+  } catch {
+    return false;
+  }
+}
+
 function claudeBridge(
   dirs: string[],
   vaultPath = "~/ai-brain",
   installedItems?: CatalogItem[],
   projectSlug?: string,
   subSpecs: { name: string; topic: string }[] = [],
+  hasGraphify = false,
 ): BridgeFile {
   const body = buildRoutingMaps(
     dirs,
@@ -308,11 +320,59 @@ function claudeBridge(
     subSpecs,
     CLAUDE_MEMORY_NOTE,
   );
+  const graphifySection = hasGraphify
+    ? `\n\n## graphify\n\nThis project has a graphify knowledge graph at graphify-out/.\n\nRules:\n\n- Before answering architecture or codebase questions, read graphify-out/GRAPH_REPORT.md for god nodes and community structure\n- If graphify-out/wiki/index.md exists, navigate it instead of reading raw files\n- After modifying code files in this session, run \`graphify update .\` to keep the graph current (AST-only, no API cost)`
+    : "";
   return {
     editorId: "claude",
     filePath: "CLAUDE.md",
     description: "Claude Code context file (map pattern)",
-    content: `# CLAUDE.md\n\n${HEADER_COMMENT}\n\n${body}\n`,
+    content: `# CLAUDE.md\n\n${HEADER_COMMENT}\n\n${body}${graphifySection}\n`,
+  };
+}
+
+function claudeSettingsLocalBridge(
+  vaultPath: string,
+  projectName: string,
+  projectSlug: string,
+): BridgeFile {
+  const command = [
+    `PROJECT_NAME='${projectName}'`,
+    `VAULT='${vaultPath}'`,
+    `SLUG='${projectSlug}'`,
+    `echo "=== $PROJECT_NAME SESSION START ==="`,
+    `echo`,
+    `if [ -f .ai/AI-CONTEXT.md ]; then echo '--- .ai/AI-CONTEXT.md ---'; cat .ai/AI-CONTEXT.md; echo; fi`,
+    `if [ -f "$VAULT/wiki/projects/$SLUG/status.md" ]; then echo '--- VAULT status.md ---'; cat "$VAULT/wiki/projects/$SLUG/status.md"; echo; fi`,
+    `if [ -f "$VAULT/wiki/projects/$SLUG/open-questions.md" ]; then echo '--- VAULT open-questions.md ---'; cat "$VAULT/wiki/projects/$SLUG/open-questions.md"; echo; fi`,
+    `if [ -f "$VAULT/wiki/projects/$SLUG/decisions.md" ]; then echo '--- VAULT decisions.md (locked ADRs) ---'; cat "$VAULT/wiki/projects/$SLUG/decisions.md"; echo; fi`,
+    `echo '=== WORKFLOW REMINDER ==='`,
+    `echo 'Before re-reading source files: query claude-mem search for the topic.'`,
+    `echo 'Code exploration: prefer smart_search / smart_outline / Explore subagent over raw Read.'`,
+    `echo 'After concrete change: update vault, replace stale entries (do not append).'`,
+    `echo '======================================='`,
+  ].join("; ");
+
+  const content = JSON.stringify(
+    {
+      hooks: {
+        SessionStart: [
+          {
+            matcher: "startup",
+            hooks: [{ type: "command", command }],
+          },
+        ],
+      },
+    },
+    null,
+    2,
+  );
+
+  return {
+    editorId: "claude",
+    filePath: ".claude/settings.local.json",
+    description: "Claude Code session-start hook (local, not committed)",
+    content: `${content}\n`,
   };
 }
 
@@ -512,12 +572,14 @@ export async function generateBridgeFiles(
   vaultPath?: string,
   installedItems?: CatalogItem[],
   projectSlug?: string,
+  projectName?: string,
 ): Promise<BridgeFile[]> {
   const dirs = await getExistingDirs(projectRoot);
   if (dirs.length === 0) {
     dirs.push("skills", "rules");
   }
   const subSpecs = await getSubSpecs(projectRoot);
+  const graphify = await hasGraphifyDir(projectRoot);
 
   const bridgeKeys = new Set<string>();
   for (const assistant of assistants) {
@@ -533,7 +595,15 @@ export async function generateBridgeFiles(
     if (key === "vscode") {
       file = await vscodeBridge(dirs, projectRoot);
     } else if (key === "claude") {
-      file = claudeBridge(dirs, vaultPath, installedItems, projectSlug, subSpecs);
+      file = claudeBridge(dirs, vaultPath, installedItems, projectSlug, subSpecs, graphify);
+      if (vaultPath && projectSlug) {
+        const name = projectName ?? projectSlug;
+        const localSettings = claudeSettingsLocalBridge(vaultPath, name, projectSlug);
+        if (!seenPaths.has(localSettings.filePath)) {
+          seenPaths.add(localSettings.filePath);
+          files.push(localSettings);
+        }
+      }
     } else if (key === "universal" || key === "neovim") {
       file = agentsBridge(dirs, vaultPath, installedItems, projectSlug, subSpecs);
     } else {
@@ -618,6 +688,7 @@ export async function generateBridgeFilesForIds(
     dirs.push("skills", "rules");
   }
   const subSpecs = await getSubSpecs(projectRoot);
+  const graphify = await hasGraphifyDir(projectRoot);
 
   const resolveKey = (id: string): string => ASSISTANT_TO_BRIDGE[id] ?? id;
 
@@ -636,7 +707,7 @@ export async function generateBridgeFilesForIds(
     if (key === "vscode") {
       file = await vscodeBridge(dirs, projectRoot);
     } else if (key === "claude") {
-      file = claudeBridge(dirs, vaultPath, installedItems, projectSlug, subSpecs);
+      file = claudeBridge(dirs, vaultPath, installedItems, projectSlug, subSpecs, graphify);
     } else if (key === "universal" || key === "neovim") {
       file = agentsBridge(dirs, vaultPath, installedItems, projectSlug, subSpecs);
     } else {

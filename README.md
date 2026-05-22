@@ -37,20 +37,20 @@ Instead, `CLAUDE.md` should be a **tiny index** that tells the AI **where** thin
 ### 2. Three Tiers of Config
 
 ```
-┌──────────────────────────────────────────┐
-│  GLOBAL   ~/.ai/                         │   ← tiny, identity + integrations
-│  • always.md (50 tokens)                 │
-│  • integrations/ (obsidian, mem, graph)  │
-├──────────────────────────────────────────┤
-│  PROJECT  project/.ai/                   │   ← project-specific skills/rules
-│  • skills/  agents/  rules/  commands/   │
-│  • .skill-lock.json                      │
-├──────────────────────────────────────────┤
-│  SPECS    project/docs/spec/             │   ← hierarchical, page-by-page
-│  • SPEC.md (root, always load)           │
-│  • auth/SPEC.md      (load on demand)    │
-│  • inventory/SPEC.md (load on demand)    │
-└──────────────────────────────────────────┘
+┌────────────────────────────────────────────────┐
+│  BRAIN    <your-brain-path>/config/            │   ← one location, you provide the path
+│  • always.md (~50 tokens, every message)       │
+│  • integrations/ (obsidian, mem, caveman, ...) │
+├────────────────────────────────────────────────┤
+│  PROJECT  project/.ai/                         │   ← project-specific skills/rules
+│  • skills/  agents/  rules/  commands/         │
+│  • .skill-lock.json                            │
+├────────────────────────────────────────────────┤
+│  SPECS    project/docs/spec/                   │   ← hierarchical, page-by-page
+│  • SPEC.md (root, always load)                 │
+│  • auth/SPEC.md      (load on demand)          │
+│  • inventory/SPEC.md (load on demand)          │
+└────────────────────────────────────────────────┘
 ```
 
 ### 3. Obsidian for Humans, `.ai/` for AI
@@ -66,49 +66,72 @@ Instead, `CLAUDE.md` should be a **tiny index** that tells the AI **where** thin
 ## 🗂️ The Complete Architecture
 
 ```
-~/                                  ← your home directory
-├── .ai/                            ← GLOBAL config (laptop-wide)
-│   ├── always.md                   ← ≤200 tokens, loads every message
-│   └── integrations/
-│       ├── obsidian.md             ← Obsidian vault path + structure
-│       ├── claude-mem.md           ← session memory config
-│       └── graphify.md             ← knowledge graph config (optional)
+<your-brain-path>/                      ← One location, you provide the path
+├── config/                             ← identity + integrations
+│   ├── always.md                       ← ~50 tokens, every message
+│   └── integrations/                   ← obsidian, mem, graphify, caveman
+│       ├── obsidian.md                 ← vault path + structure
+│       ├── claude-mem.md               ← session memory config
+│       ├── caveman.md                  ← compressed communication mode
+│       └── graphify.md                 ← knowledge graph config (optional)
 │
-├── ai-brain/                       ← OBSIDIAN VAULT (your second brain)
-│   ├── .raw/                       ← drop PDFs, docs, videos, screenshots
-│   ├── wiki/                       ← auto-managed by claude-obsidian
-│   │   ├── hot.md                  ← session cache (auto-loaded)
-│   │   ├── index.md                ← master catalog
-│   │   ├── concepts/               ← extracted ideas
-│   │   ├── entities/               ← people, tools, companies
-│   │   ├── projects/               ← YOUR PROJECTS INDEX HERE
-│   │   │   ├── saas-inventory/
-│   │   │   └── personal-ai-skills/
-│   │   └── sources/                ← ingested from .raw/
-│   └── .obsidian/
+├── .raw/                               ← drop PDFs, docs, videos, screenshots
+│   └── projects/                       ← one folder per project
+│       ├── erp-pro-ui/
+│       ├── erp-pro/
+│       ├── auth-service/
+│       └── shared/                     ← cross-project knowledge
 │
-└── projects/
-    └── my-saas-app/                ← PROJECT-LEVEL config
-        ├── SPEC.md                 ← root spec, always load (~150 tokens)
-        ├── CLAUDE.md               ← MAP (where things are)
-        ├── AGENTS.md               ← (Copilot/Codex bridge)
-        ├── .cursor/rules           ← (Cursor bridge)
-        ├── .vscode/settings.json   ← (VS Code bridge, merged)
-        ├── GEMINI.md               ← (Gemini bridge)
-        ├── .windsurfrules          ← (Windsurf bridge)
-        │
-        ├── .ai/                    ← project skills/rules
-        │   ├── skills/
-        │   ├── agents/
-        │   ├── rules/
-        │   ├── commands/
-        │   └── .skill-lock.json
-        │
-        └── docs/
-            └── spec/               ← HIERARCHICAL SPECS
-                ├── auth/SPEC.md    ← load when working on auth
-                ├── inventory/SPEC.md
-                └── billing/SPEC.md
+├── wiki/                               ← auto-managed by claude-obsidian
+│   ├── hot.md                          ← session cache (auto-loaded)
+│   ├── index.md                        ← master catalog
+│   ├── concepts/                       ← extracted ideas
+│   ├── entities/                       ← people, tools, companies
+│   ├── sources/                        ← ingested from .raw/
+│   └── projects/                       ← one folder per project
+│       ├── erp-pro-ui/
+│       │   ├── index.md
+│       │   ├── components.md           ← component catalog
+│       │   ├── design-tokens.md        ← colors, spacing, typography
+│       │   └── changelog.md
+│       ├── erp-pro/
+│       │   ├── index.md                ← project overview
+│       │   ├── decisions.md            ← architecture decisions
+│       │   ├── architecture.md         ← system design
+│       │   ├── api-contracts.md        ← APIs this app CONSUMES
+│       │   └── dependencies.md
+│       ├── auth-service/
+│       │   ├── index.md
+│       │   ├── roles-matrix.md         ← who can do what
+│       │   ├── api-contracts.md        ← APIs this app EXPOSES
+│       │   └── flows.md                ← login, register, 2FA flows
+│       └── shared/                     ← cross-project knowledge
+│           ├── api-contracts.md        ← how all apps talk to each other
+│           ├── shared-types.md         ← TypeScript types used everywhere
+│           ├── deployment.md           ← how to deploy the whole system
+│           └── env-vars.md             ← environment variables across apps
+│
+└── graphify-out/                       ← knowledge graph (optional)
+
+
+project/                                ← PER-PROJECT
+├── .ai/                                ← skills, agents, rules
+│   ├── skills/
+│   ├── agents/
+│   ├── rules/
+│   ├── commands/
+│   └── .skill-lock.json
+├── SPEC.md                             ← what the app IS (~150 tokens, always load)
+├── docs/spec/                          ← hierarchical specs (~200 tokens, on demand)
+│   ├── auth/SPEC.md                    ← load when working on auth
+│   ├── inventory/SPEC.md               ← load when working on inventory
+│   ├── billing/SPEC.md
+│   └── dashboard/SPEC.md
+├── CLAUDE.md                           ← MAP (tiny index, not a dump)
+├── AGENTS.md                           ← Copilot/Codex bridge
+├── .cursor/rules/                      ← Cursor bridge
+├── .vscode/settings.json               ← VS Code bridge (merged)
+└── GEMINI.md                           ← Gemini bridge
 ```
 
 ---

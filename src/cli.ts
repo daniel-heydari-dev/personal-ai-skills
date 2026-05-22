@@ -410,16 +410,17 @@ async function cmdAdd(
       );
       handleInstallResult(result, spinner);
 
-      // Create always.md stub if rules were installed — CLAUDE.md references it
-      const rulesInstalled = wizard.items.some((i) => i.type === "rules");
-      if (rulesInstalled) {
+      // Create always.md with @-imports for each installed rule — CLAUDE.md references it
+      const installedRules = wizard.items.filter((i) => i.type === "rules");
+      if (installedRules.length > 0) {
         const alwaysPath = path.join(projectRoot, ".ai", "rules", "always.md");
         try {
           await fs.promises.access(alwaysPath);
         } catch {
+          const imports = installedRules.map((r) => `- @${r.id}/RULE.md`).join("\n");
           await fs.promises.writeFile(
             alwaysPath,
-            "# Always Rules\n\nLoad all files in this directory. These are hard constraints — apply to every task.\n",
+            `# Always Rules\n\nHard constraints — applied to every task.\n\n${imports}\n`,
             "utf-8",
           );
         }
@@ -439,6 +440,24 @@ async function cmdAdd(
         const { written, skipped } = await writeBridgeFiles(files, projectRoot);
         if (written.length > 0) showInfo(`Generated: ${written.join(", ")}`);
         if (skipped.length > 0) showInfo(`Skipped (already exist): ${skipped.join(", ")}`);
+      }
+
+      // Create .claude/session-log.md placeholder when Claude Code bridge is selected.
+      // CLAUDE.md Brain Map points here as the first thing to read when resuming a session.
+      const claudeSelected = wizard.bridgeIds.includes("claude") || wizard.bridgeIds.includes("all");
+      if (claudeSelected) {
+        const sessionLogPath = path.join(projectRoot, ".claude", "session-log.md");
+        try {
+          await fs.promises.access(sessionLogPath);
+        } catch {
+          await fs.promises.mkdir(path.join(projectRoot, ".claude"), { recursive: true });
+          await fs.promises.writeFile(
+            sessionLogPath,
+            "# Session Log\n\n<!-- Written by PostToolUse hook after every turn. -->\n<!-- Read this first when resuming a session or after context compaction. -->\n",
+            "utf-8",
+          );
+          showInfo("Created .claude/session-log.md — read first when resuming sessions");
+        }
       }
     }
 

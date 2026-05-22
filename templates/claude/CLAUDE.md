@@ -1,73 +1,76 @@
-# {{projectName}}
+# {{PROJECT_NAME}}
 
-{{projectDescription}}
+<!--
+  Routing map. Loaded every session. Keep it THIN — every line should
+  pass the test: "would removing this cause a mistake?"
 
-## Stack
+  Anthropic best practices:  https://code.claude.com/docs/en/best-practices
+  Memory & imports:          https://code.claude.com/docs/en/memory
+  AGENTS.md spec:            https://agents.md/
 
-{{stack}}
+  THREE-TIER LOADING (token efficiency):
+    @SPEC.md                 ← always loaded (~150 tokens)
+    @docs/spec/<feature>/    ← on demand, when a keyword matches (~200 tokens)
+    .ai/skills/<name>/       ← on demand, when the topic matches
 
-## Project Structure
+  The @path syntax is a Claude-native lazy-load directive. Non-Claude editors
+  read it as a plain pointer — works in both worlds.
+-->
 
-```
-{{projectStructure}}
-```
+## ⚡ Always Load
 
-## Development Commands
+- Root spec: @SPEC.md
+- Always-on rules: @.ai/rules/always.md
+- Slash commands: `.ai/commands/<name>/COMMAND.md` — load when the user references one by name
 
-```bash
-# Development
-{{devCommand}}
+## 🗺️ Spec Map
 
-# Build
-{{buildCommand}}
+<!--
+  Add a row for each docs/spec/<name>/SPEC.md you scaffold.
+  Run: npx personal-ai-skills init spec <name>
+-->
 
-# Test
-{{testCommand}}
+| Topic | Keywords | Load |
+| ----- | -------- | ---- |
+| <!-- EDITME: e.g. Auth | auth, login, logout, JWT, session | `docs/spec/auth/SPEC.md` --> |
 
-# Lint
-{{lintCommand}}
-```
+## 🗺️ Skills Map
 
-## Conventions
+<!--
+  List only skills installed in .ai/skills/.
+  Run: npx personal-ai-skills add <skill-name>
+-->
 
-- Follow existing patterns in the codebase
-- Use TypeScript with strict mode enabled
-- Write tests for new features
-- Document public APIs with JSDoc
-- Keep functions small and focused
+| Skill | Load |
+| ----- | ---- |
+| <!-- EDITME: e.g. modern-react | `.ai/skills/modern-react/` --> |
 
-## Code Style
+## 🗺️ Agents Map
 
-- Use descriptive variable and function names
-- Prefer `const` over `let`, avoid `var`
-- Use early returns to reduce nesting
-- Handle errors explicitly, don't swallow them
+<!--
+  List only agents installed in .ai/agents/.
+  Run: npx personal-ai-skills add <agent-name>
+-->
 
-## Do
+| Agent | Load |
+| ----- | ---- |
+| <!-- EDITME: e.g. code-reviewer | `.ai/agents/code-reviewer/` --> |
 
-- ✅ Follow the existing code style and patterns
-- ✅ Write self-documenting code
-- ✅ Add tests for new functionality
-- ✅ Handle edge cases and errors gracefully
-- ✅ Use TypeScript types effectively
+## 🗺️ Brain Map
 
-## Don't
+> Load in priority order when context seems lost or session resumed.
 
-- ❌ Use `any` type without justification
-- ❌ Leave `console.log` in production code
-- ❌ Commit commented-out code
-- ❌ Bypass validation or security checks
-- ❌ Add dependencies without discussion
+| What | When to load | Path |
+| ---- | ------------ | ---- |
+| **Session log** | First — resuming session, after compaction | `.claude/session-log.md` |
+| Recent session cache | Cross-session history | `{{VAULT_PATH}}/wiki/hot.md` |
+| This project's notes | Feature context, past work | `{{VAULT_PATH}}/wiki/projects/{{PROJECT_SLUG}}/` |
+| Architecture decisions | ADRs, why decisions were made | `{{VAULT_PATH}}/wiki/projects/{{PROJECT_SLUG}}/decisions.md` |
+| Cross-project contracts | API contracts with other projects | `{{VAULT_PATH}}/wiki/projects/shared/api-contracts.md` |
 
-## Skills
+## 🧠 Memory
 
-This project uses the following skills for code quality:
-
-- `clean-code` — Naming, readability, simplicity
-- `solid-principles` — SOLID design principles
-- `clean-typescript` — TypeScript best practices
-- `testing-best-practices` — Testing patterns
-- `error-handling` — Error handling patterns
-- `web-security` — Security best practices
-
-See `.claude/skills/` for detailed guidelines.
+- **`.claude/session-log.md`** — git snapshot written after every turn. Read this first when resuming or context feels lost. Shows WHAT changed this session.
+- **claude-mem** auto-injects recent session context — don't repeat what's already there.
+- **`search_memory`** (MCP tool) — use for older sessions or specific past decisions.
+- **`/graphify`** — invoke for large-codebase navigation (up to 71× token reduction).

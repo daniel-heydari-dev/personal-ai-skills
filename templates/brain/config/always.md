@@ -6,21 +6,20 @@ loaded: always
 # My Config — Identity & Defaults
 
 <!--
+  ⚠️ EDITME — replace "Your Name" and adjust preferences, then remove this banner.
+
   WHAT THIS FILE IS
   ──────────────────
   This is the ~50-token file that tells Claude WHO you are.
   It is referenced in EVERY project's CLAUDE.md under "Always Load".
   Keep it short — it loads every single session.
-
-  Fill in the sections below with your real preferences.
-  Delete anything that doesn't apply.
 -->
 
 ## Who I Am
 
-- **Name:** Daniel
-- **Role:** Software engineer — full-stack, TypeScript-first
-- **Working style:** I prefer direct, no-fluff answers. Show me code, not theory.
+- **Name:** Your Name
+- **Role:** Software engineer
+- **Working style:** Direct answers. Show code, not theory.
 - **Experience level:** Senior — assume I know the fundamentals, focus on the "why"
 
 ## Code Style Defaults
@@ -44,13 +43,13 @@ These apply across ALL my projects unless a project's SPEC.md says otherwise:
 
 ## Tools I Use Daily
 
-- **Editor:** Claude Code (primary), Cursor (secondary)
+- **Editor:** Claude Code (primary)
 - **Package manager:** pnpm
 - **Version control:** git — conventional commits (`feat:`, `fix:`, `chore:`)
-- **Deploy:** Vercel (frontend), Railway (backend/DB)
 
 ## Related
 
 - [[integrations/obsidian]] — how the second brain vault works
 - [[integrations/claude-mem]] — how session memory works
 - [[integrations/graphify]] — how the knowledge graph works
+- [[integrations/caveman]] — compressed communication mode
